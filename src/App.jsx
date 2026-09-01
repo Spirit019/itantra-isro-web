@@ -1,3 +1,14 @@
+/* 
+<!--
+THESIS: iTantra replaces sluggish multi-kilobit audio streams with a hyper-compressed 18-byte neural token stream (24 bps) that synthesizes studio-grade Indic speech on-device over zero-internet radio links.
+OWN-WORLD: Tactical ISRO Mission Control HUD on deep matte obsidian (#060911), high-visibility telemetry cyan (#00E5FF), radar emerald (#10B981), satcom amber (#F59E0B), and emergency vermilion (#EF4444) with precision micro-borders and tabular telemetry readouts.
+STORY: An operator or SIH judge experiences the full 369ms pipeline: speaking in an Indian regional dialect at a Himalayan outpost, compressing to an 18-byte packet, beaming across a LoRa radio channel, and synthesizing in native Tamil/Bengali at Coastal Command.
+FIRST VIEWPORT: Dual-node tactical transceiver command console with Node Alpha (Field Transmitter), Air Interface (LoRa 865MHz RF Simulator), and Node Bravo (HQ Synthesizer) with live FFT audio visualizer, 18-byte hex inspector, and Level 0 SOS preemption.
+FORM: Candidate 3 (Deep Aerospace Command HUD & Precision Telemetry Console), seed key e9422a6c.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+*/
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Radio,
@@ -29,7 +40,13 @@ import {
   Edit3,
   Check,
   Flame,
-  LifeBuoy
+  LifeBuoy,
+  Gauge,
+  Database,
+  Terminal,
+  Signal,
+  RadioTower,
+  Headphones
 } from 'lucide-react';
 import { TACTICAL_SAMPLES, HOW_IT_WORKS_INFO } from './data/samplesAndInfo';
 import { audioEngine } from './utils/audioEngine';
@@ -325,23 +342,23 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[#060911] text-slate-100 font-sans flex flex-col selection:bg-cyan-500 selection:text-black">
       {/* Top Header / Tactical Mission Status */}
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50">
+      <header className="border-b border-slate-800 bg-[#0c121e]/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
               <Radio className="h-5 w-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-wider text-cyan-400">iTANTRA</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-blue-950/80 border border-blue-600/40 text-blue-300 font-mono">
+                <span className="font-bold text-lg tracking-wider text-cyan-400 font-mono">iTANTRA</span>
+                <span className="text-[11px] px-2 py-0.5 rounded bg-blue-950/90 border border-blue-500/40 text-blue-300 font-mono font-semibold">
                   ISRO SIH26173
                 </span>
                 {faradayCageActive && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 font-mono flex items-center gap-1">
-                    <WifiOff className="h-3 w-3" /> ZERO INTERNET AIR-GAPPED
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-500/40 text-emerald-400 font-mono flex items-center gap-1">
+                    <WifiOff className="h-3 w-3" /> ZERO-INTERNET AIR-GAPPED
                   </span>
                 )}
               </div>
@@ -353,13 +370,13 @@ export default function App() {
 
           {/* Tactical Link Health */}
           <div className="flex items-center gap-3 text-xs font-mono">
-            <div className="hidden sm:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700">
+            <div className="hidden sm:flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-slate-800">
               <Activity className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
               <span className="text-slate-400">FREQ:</span>
               <span className="text-cyan-300 font-semibold">865.20 MHz (LoRa ISM)</span>
             </div>
 
-            <div className="hidden md:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700">
+            <div className="hidden md:flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-slate-800">
               <Sliders className="h-3.5 w-3.5 text-emerald-400" />
               <span className="text-slate-400">LATENCY:</span>
               <span className="text-emerald-300 font-semibold">{369 + (radioMode === 'lora' ? timeOnAirMs - 56 : 0)} ms</span>
@@ -367,10 +384,10 @@ export default function App() {
 
             <button
               onClick={isEmergencySos ? resetEmergency : handleTriggerEmergencySos}
-              className={`px-3 py-1.5 rounded-md font-bold flex items-center gap-1.5 transition-all shadow-md ${
+              className={`px-3.5 py-1.5 rounded-md font-bold flex items-center gap-1.5 transition-all shadow-md ${
                 isEmergencySos
                   ? 'bg-red-600 text-white animate-bounce shadow-red-500/50'
-                  : 'bg-red-950/80 border border-red-600/50 text-red-400 hover:bg-red-600 hover:text-white'
+                  : 'bg-red-950/90 border border-red-600/60 text-red-400 hover:bg-red-600 hover:text-white'
               }`}
             >
               <AlertTriangle className="h-3.5 w-3.5" />
@@ -380,12 +397,12 @@ export default function App() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto text-sm border-t border-slate-800/60 pt-2 pb-1 font-medium">
+        <div className="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto text-sm border-t border-slate-800/80 pt-2 pb-1 font-medium">
           <button
             onClick={() => setActiveTab('demo')}
-            className={`px-3 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
               activeTab === 'demo'
-                ? 'bg-slate-800 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
+                ? 'bg-slate-900 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -394,9 +411,9 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('architecture')}
-            className={`px-3 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
               activeTab === 'architecture'
-                ? 'bg-slate-800 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
+                ? 'bg-slate-900 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -405,9 +422,9 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('latency')}
-            className={`px-3 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
               activeTab === 'latency'
-                ? 'bg-slate-800 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
+                ? 'bg-slate-900 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -416,9 +433,9 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('hardware')}
-            className={`px-3 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
               activeTab === 'hardware'
-                ? 'bg-slate-800 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
+                ? 'bg-slate-900 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -427,9 +444,9 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('judge_qa')}
-            className={`px-3 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
               activeTab === 'judge_qa'
-                ? 'bg-slate-800 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
+                ? 'bg-slate-900 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -444,9 +461,9 @@ export default function App() {
         {isEmergencySos && (
           <div className="mb-6 p-4 rounded-xl bg-red-950/90 border-2 border-red-500 text-red-200 flex items-center justify-between shadow-2xl shadow-red-900/50 animate-pulse">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="h-8 w-8 text-red-400 animate-bounce" />
+              <AlertTriangle className="h-8 w-8 text-red-400 animate-bounce shrink-0" />
               <div>
-                <h3 className="font-bold text-lg text-white">
+                <h3 className="font-bold text-base sm:text-lg text-white">
                   🚨 LEVEL 0 EMERGENCY SOS BROADCAST ACTIVE
                 </h3>
                 <p className="text-xs text-red-300 font-mono">
@@ -457,7 +474,7 @@ export default function App() {
             </div>
             <button
               onClick={resetEmergency}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg uppercase tracking-wider"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg uppercase tracking-wider shrink-0"
             >
               Acknowledge & Dismiss
             </button>
@@ -467,13 +484,52 @@ export default function App() {
         {/* TAB 1: LIVE WORKING TRANSCEIVER DEMO */}
         {activeTab === 'demo' && (
           <div className="space-y-6">
-            {/* Top Control Bar */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
+            {/* Top Tactical Telemetry Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono">
+              <div className="bg-[#0e1626] border border-cyan-500/30 rounded-xl p-3 shadow-md">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+                  <span>COMPRESSION</span>
+                  <Gauge className="h-3.5 w-3.5 text-cyan-400" />
+                </div>
+                <div className="text-xl font-bold text-cyan-300">2,666×</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">64,000 bps $\to$ 24 bps</div>
+              </div>
+
+              <div className="bg-[#0e1626] border border-emerald-500/30 rounded-xl p-3 shadow-md">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+                  <span>TOTAL LATENCY</span>
+                  <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                </div>
+                <div className="text-xl font-bold text-emerald-300">369 ms</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Mouth-to-Ear Total Delay</div>
+              </div>
+
+              <div className="bg-[#0e1626] border border-amber-500/30 rounded-xl p-3 shadow-md">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+                  <span>RADIO BAND</span>
+                  <RadioTower className="h-3.5 w-3.5 text-amber-400" />
+                </div>
+                <div className="text-xl font-bold text-amber-300">865 MHz</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Indian ISM LoRa / BLE 5.0</div>
+              </div>
+
+              <div className="bg-[#0e1626] border border-purple-500/30 rounded-xl p-3 shadow-md">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+                  <span>ON-DEVICE AI</span>
+                  <Cpu className="h-3.5 w-3.5 text-purple-400" />
+                </div>
+                <div className="text-xl font-bold text-purple-300">MOS 4.26</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">FastPitch + Vocos Vocoder</div>
+              </div>
+            </div>
+
+            {/* Radio Mode Selector Bar */}
+            <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-mono text-slate-400 uppercase">Radio Phy Mode:</span>
+                <span className="text-xs font-mono text-slate-400 uppercase">Radio Physical Layer:</span>
                 <button
                   onClick={() => setRadioMode('lora')}
-                  className={`px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
                     radioMode === 'lora'
                       ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -483,7 +539,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setRadioMode('ble')}
-                  className={`px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
                     radioMode === 'ble'
                       ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -493,7 +549,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setRadioMode('hc12')}
-                  className={`px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
                     radioMode === 'hc12'
                       ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -512,7 +568,7 @@ export default function App() {
                     onChange={(e) => setFaradayCageActive(e.target.checked)}
                     className="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-cyan-500"
                   />
-                  <span>Faraday Metal Box (Simulate 0% WiFi/Cellular)</span>
+                  <span>Faraday Cage (Zero Internet / 100% Offline Mode)</span>
                 </label>
               </div>
             </div>
@@ -520,23 +576,23 @@ export default function App() {
             {/* Main 3-Column Tactical Pipeline: Node Alpha -> Radio Link -> Node Bravo */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* LEFT COLUMN: NODE ALPHA (Transmitter) */}
-              <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-4">
+              <div className="lg:col-span-5 bg-[#0c121e] border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
                     <div className="flex items-center gap-2">
                       <div className="h-3 w-3 rounded-full bg-cyan-400 animate-ping" />
-                      <h2 className="font-bold text-sm text-cyan-300 tracking-wider">
+                      <h2 className="font-bold text-sm text-cyan-300 tracking-wider font-mono">
                         NODE ALPHA — FIELD TRANSMITTER
                       </h2>
                     </div>
-                    <span className="text-xs font-mono text-slate-400">Chamoli Sector 4</span>
+                    <span className="text-xs font-mono text-slate-400">Chamoli Sector 4 (Himalayas)</span>
                   </div>
 
-                  {/* Speech Input Language Selector & Mode */}
+                  {/* Speech Input Language Selector */}
                   <div className="space-y-2 mb-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                        Speaking Language (ASR):
+                        Speaking Language (IndicConformer ASR):
                       </label>
                       <button
                         onClick={() => {
@@ -570,7 +626,7 @@ export default function App() {
                           className={`py-1.5 px-2 rounded text-xs font-bold font-mono transition-all border ${
                             selectedLang === lang.code
                               ? 'bg-cyan-500 text-black border-cyan-400 shadow-sm'
-                              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                              : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
                           }`}
                         >
                           {lang.label}
@@ -711,7 +767,7 @@ export default function App() {
                   <div className="mt-4 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
                       <span>18-BYTE NEURAL TOKEN PACKET:</span>
-                      <span className="text-cyan-400">24 bps Bitrate</span>
+                      <span className="text-cyan-400 font-bold">24 bps Bitrate</span>
                     </div>
                     <div className="grid grid-cols-6 sm:grid-cols-9 gap-1 bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-mono text-xs text-center">
                       {currentTokens.map((byte, idx) => {
@@ -753,7 +809,7 @@ export default function App() {
                 <button
                   onClick={handleTransmit}
                   disabled={isTransmitting}
-                  className={`w-full py-3 rounded-lg font-bold text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
+                  className={`w-full py-3.5 rounded-lg font-bold text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg font-mono ${
                     isTransmitting
                       ? 'bg-cyan-700 text-white cursor-wait'
                       : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-cyan-500/20'
@@ -765,12 +821,12 @@ export default function App() {
               </div>
 
               {/* MIDDLE COLUMN: RADIO CHANNEL SIMULATION */}
-              <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between items-center text-center space-y-4">
+              <div className="lg:col-span-2 bg-[#0c121e] border border-slate-800 rounded-xl p-4 flex flex-col justify-between items-center text-center space-y-4">
                 <div className="w-full">
                   <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider block mb-1">
                     AIR INTERFACE
                   </span>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 font-mono">
                     {radioMode === 'lora' ? 'LoRa SX1262 865MHz' : radioMode === 'ble' ? 'BLE 5.0 Coded PHY' : '433MHz HC-12'}
                   </p>
                 </div>
@@ -805,7 +861,7 @@ export default function App() {
                   <div>
                     <div className="flex justify-between text-slate-400 mb-1">
                       <span>Distance:</span>
-                      <span className="text-cyan-300">{distanceKm} km</span>
+                      <span className="text-cyan-300 font-bold">{distanceKm} km</span>
                     </div>
                     <input
                       type="range"
@@ -814,7 +870,7 @@ export default function App() {
                       step="0.5"
                       value={distanceKm}
                       onChange={(e) => setDistanceKm(parseFloat(e.target.value))}
-                      className="w-full accent-cyan-500 h-1 bg-slate-800 rounded"
+                      className="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer"
                     />
                   </div>
 
@@ -822,7 +878,7 @@ export default function App() {
                     <div>
                       <div className="flex justify-between text-slate-400 mb-1">
                         <span>Spreading Factor:</span>
-                        <span className="text-cyan-300">SF{spreadingFactor}</span>
+                        <span className="text-cyan-300 font-bold">SF{spreadingFactor}</span>
                       </div>
                       <input
                         type="range"
@@ -830,29 +886,29 @@ export default function App() {
                         max="12"
                         value={spreadingFactor}
                         onChange={(e) => setSpreadingFactor(parseInt(e.target.value))}
-                        className="w-full accent-cyan-500 h-1 bg-slate-800 rounded"
+                        className="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer"
                       />
                     </div>
                   )}
 
                   <div className="pt-1 border-t border-slate-800 flex justify-between text-[10px] text-slate-500">
                     <span>FEC Parity:</span>
-                    <span className="text-emerald-400">RS(32,24)</span>
+                    <span className="text-emerald-400 font-bold">RS(32,24)</span>
                   </div>
                 </div>
               </div>
 
               {/* RIGHT COLUMN: NODE BRAVO (Receiver & Neural TTS Voice Synthesizer) */}
-              <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-4">
+              <div className="lg:col-span-5 bg-[#0c121e] border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
                     <div className="flex items-center gap-2">
                       <div className={`h-3 w-3 rounded-full ${packetDelivered ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                      <h2 className="font-bold text-sm text-emerald-300 tracking-wider">
+                      <h2 className="font-bold text-sm text-emerald-300 tracking-wider font-mono">
                         NODE BRAVO — RESCUE HQ RECEIVER
                       </h2>
                     </div>
-                    <span className="text-xs font-mono text-slate-400">Dehradun Command</span>
+                    <span className="text-xs font-mono text-slate-400">Dehradun Command HQ</span>
                   </div>
 
                   {/* Packet Receipt Status */}
@@ -911,7 +967,7 @@ export default function App() {
                       <select
                         value={receiverTargetLang}
                         onChange={(e) => setReceiverTargetLang(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer"
                       >
                         <option value="same">Original Native Language ({selectedLang.toUpperCase()})</option>
                         <option value="ta">Tamil (தமிழ்)</option>
@@ -946,7 +1002,7 @@ export default function App() {
                 <button
                   onClick={handlePlayReceivedSpeech}
                   disabled={!packetDelivered || isPlayingAudio}
-                  className={`w-full py-3 rounded-lg font-bold text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
+                  className={`w-full py-3.5 rounded-lg font-bold text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg font-mono ${
                     !packetDelivered
                       ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                       : isPlayingAudio
@@ -965,15 +1021,15 @@ export default function App() {
         {/* TAB 2: HOW IT WORKS (PIPELINE & ARCHITECTURE) */}
         {activeTab === 'architecture' && (
           <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-              <h2 className="text-xl font-bold text-cyan-400 mb-2">
+            <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl">
+              <h2 className="text-xl font-bold text-cyan-400 mb-2 font-mono">
                 {HOW_IT_WORKS_INFO.overview.title}
               </h2>
               <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 text-sm text-slate-300 whitespace-pre-line leading-relaxed mb-6 font-mono">
                 {HOW_IT_WORKS_INFO.overview.description}
               </div>
 
-              <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4">
+              <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 font-mono">
                 The 6-Step End-to-End Latency Pipeline:
               </h3>
 
@@ -981,7 +1037,7 @@ export default function App() {
                 {HOW_IT_WORKS_INFO.pipelineSteps.map((step) => (
                   <div key={step.step} className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 space-y-2 hover:border-cyan-500/50 transition-colors">
                     <div className="flex items-center justify-between">
-                      <span className="h-6 w-6 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 font-bold text-xs flex items-center justify-center">
+                      <span className="h-6 w-6 rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 font-bold text-xs flex items-center justify-center font-mono">
                         {step.step}
                       </span>
                       <span className="text-xs font-mono text-emerald-400 font-semibold">
@@ -990,7 +1046,7 @@ export default function App() {
                     </div>
                     <h4 className="font-bold text-sm text-slate-100">{step.name}</h4>
                     <p className="text-xs text-slate-400 leading-relaxed">{step.detail}</p>
-                    <div className="pt-2 text-[10px] font-mono text-cyan-300/80">
+                    <div className="pt-2 text-[10px] font-mono text-cyan-300/80 border-t border-slate-900">
                       Tech: {step.tech}
                     </div>
                   </div>
@@ -1003,9 +1059,9 @@ export default function App() {
         {/* TAB 3: LATENCY & BANDWIDTH CALCULATOR */}
         {activeTab === 'latency' && (
           <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+            <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-cyan-400 mb-1">
+                <h2 className="text-xl font-bold text-cyan-400 mb-1 font-mono">
                   Latency Budget & Bandwidth Compression
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -1060,9 +1116,9 @@ export default function App() {
         {/* TAB 4: HARDWARE LAB */}
         {activeTab === 'hardware' && (
           <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+            <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-cyan-400 mb-1">
+                <h2 className="text-xl font-bold text-cyan-400 mb-1 font-mono">
                   Hardware Prototyping Tiers for Hackathon
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -1113,9 +1169,9 @@ export default function App() {
         {/* TAB 5: SIH JUDGE Q&A SIMULATOR */}
         {activeTab === 'judge_qa' && (
           <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+            <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-cyan-400 mb-1">
+                <h2 className="text-xl font-bold text-cyan-400 mb-1 font-mono">
                   SIH Judge Defense & Flashcard Rebuttals
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -1145,7 +1201,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-4 px-4 text-center font-mono">
+      <footer className="border-t border-slate-800 bg-[#060911] text-slate-500 text-xs py-4 px-4 text-center font-mono">
         iTantra — Neural Transceiver System | Smart India Hackathon 2026 (SIH26173) | Designed for ISRO & Disaster Management
       </footer>
     </div>
