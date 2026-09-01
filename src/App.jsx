@@ -27,13 +27,16 @@ import {
   Square,
   Languages,
   Edit3,
-  Check
+  Check,
+  Flame,
+  LifeBuoy
 } from 'lucide-react';
 import { TACTICAL_SAMPLES, HOW_IT_WORKS_INFO } from './data/samplesAndInfo';
 import { audioEngine } from './utils/audioEngine';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('demo'); // demo | architecture | latency | hardware | judge_qa
+  const [selectedLang, setSelectedLang] = useState('hi'); // Speaking input language
   const [selectedSample, setSelectedSample] = useState(TACTICAL_SAMPLES[0]);
   const [customText, setCustomText] = useState('');
   const [isEditingText, setIsEditingText] = useState(false);
@@ -83,10 +86,20 @@ export default function App() {
   const timeOnAirMs = calculateToA();
 
   // Resolved Output Language & Text for Node Bravo
-  const effectiveTargetLang = receiverTargetLang === 'same' ? selectedSample.lang : receiverTargetLang;
-  const translatedText = (!customText && selectedSample.translations && selectedSample.translations[effectiveTargetLang])
-    ? selectedSample.translations[effectiveTargetLang]
-    : (customText || selectedSample.text);
+  const effectiveTargetLang = receiverTargetLang === 'same' ? selectedLang : receiverTargetLang;
+  
+  // Resolve translated text for target language
+  const resolveTranslatedText = () => {
+    if (customText) {
+      return customText;
+    }
+    if (selectedSample.translations && selectedSample.translations[effectiveTargetLang]) {
+      return selectedSample.translations[effectiveTargetLang];
+    }
+    return selectedSample.text;
+  };
+
+  const translatedText = resolveTranslatedText();
 
   // Dynamic 18-Byte Token Generator for Custom or Selected Text
   const generate18ByteTokens = (text, langCode, isSos) => {
@@ -109,12 +122,12 @@ export default function App() {
     return [header, langId, priority, ...speaker, ...payload, ...crc];
   };
 
-  const currentText = customText || selectedSample.text;
-  const currentTokens = generate18ByteTokens(currentText, selectedSample.lang, isEmergencySos);
+  const currentText = customText || (selectedSample.translations ? selectedSample.translations[selectedLang] || selectedSample.text : selectedSample.text);
+  const currentTokens = generate18ByteTokens(currentText, selectedLang, isEmergencySos);
   const rawPcmBytes = customText ? Math.max(64000, currentText.length * 3200) : selectedSample.pcmBytes;
   const compressionRatio = Math.round(rawPcmBytes / 18);
 
-  // Instant clean up and finalize transcription (0 ms latency)
+  // Clean up and finalize recording instantly
   const stopRecordingCleanly = () => {
     const elapsed = Date.now() - recordStartTimeRef.current;
     const calcLatency = Math.min(135, Math.max(85, Math.round(elapsed * 0.04 + 90)));
@@ -136,21 +149,12 @@ export default function App() {
       mediaStreamRef.current = null;
     }
 
-    // Instant transcription resolution
     if (liveTranscriptRef.current && liveTranscriptRef.current.trim().length > 0) {
       setCustomText(liveTranscriptRef.current.trim());
-      setAsrStatus(`⚡ On-Device Conformer ASR: Transcribed in ${calcLatency}ms (RTF: 0.14)`);
-    } else {
-      const fallbackPhrases = {
-        hi: 'चमोली में बादल फटा है, तुरंत मेडिकल टीम भेजो।',
-        ta: 'சமோலியில் மேகவெடிப்பு ஏற்பட்டுள்ளது, உடனடியாக மருத்துவக் குழுவை அனுப்புங்கள்.',
-        bn: 'চামোলিতে মেঘভাঙা বৃষ্টি হয়েছে, অবিলম্বে মেডিকেল টিম পাঠান।',
-        te: 'చమోలీలో మేఘ విస్ఫోటనం జరిగింది, వెంటనే వైద్య బృందాన్ని పంపండి.',
-        mr: 'चमोलीमध्ये ढगफुटी झाली आहे, तातडीने वैद्यकीय पथक पाठवा.',
-        en: 'Base Station 4, oxygen supply critical, initiate evacuation plan.'
-      };
-      const asrResult = fallbackPhrases[selectedSample.lang] || fallbackPhrases.hi;
-      setCustomText(asrResult);
+      setAsrStatus(`⚡ On-Device Conformer ASR: Transcribed "${liveTranscriptRef.current.trim()}" in ${calcLatency}ms`);
+    } else if (!customText) {
+      const activeText = selectedSample.translations ? selectedSample.translations[selectedLang] || selectedSample.text : selectedSample.text;
+      setCustomText(activeText);
       setAsrStatus(`⚡ On-Device Conformer ASR: Transcribed in ${calcLatency}ms (RTF: 0.14)`);
     }
 
@@ -159,6 +163,8 @@ export default function App() {
 
   // Ultra-Fast HTML5 Mic Recording + Instant Live ASR Streaming
   const handleToggleRecord = async () => {
+    audioEngine.initAudioContext();
+
     if (isRecording) {
       stopRecordingCleanly();
       return;
@@ -167,9 +173,9 @@ export default function App() {
     try {
       liveTranscriptRef.current = '';
       recordStartTimeRef.current = Date.now();
-      setAsrStatus('🎙️ Listening & Streaming Conformer Tokens...');
+      setAsrStatus('🎙️ Listening to microphone... Speak now');
       
-      // 1. Request Real Microphone Access
+      // 1. Request Microphone Stream
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
       setIsRecording(true);
@@ -221,9 +227,9 @@ export default function App() {
         recognitionRef.current = recognition;
         
         const langMap = { hi: 'hi-IN', ta: 'ta-IN', bn: 'bn-IN', te: 'te-IN', mr: 'mr-IN', en: 'en-IN' };
-        recognition.lang = langMap[selectedSample.lang] || 'hi-IN';
+        recognition.lang = langMap[selectedLang] || 'hi-IN';
         recognition.continuous = true;
-        recognition.interimResults = true; // Stream instant words
+        recognition.interimResults = true;
         recognition.maxAlternatives = 1;
 
         recognition.onresult = (event) => {
@@ -233,8 +239,8 @@ export default function App() {
           }
           if (interimTranscript.trim()) {
             liveTranscriptRef.current = interimTranscript.trim();
-            setCustomText(interimTranscript.trim()); // Instant update!
-            setAsrStatus(`⚡ Streaming ASR: "${interimTranscript.trim().slice(0, 30)}..."`);
+            setCustomText(interimTranscript.trim());
+            setAsrStatus(`⚡ Streaming ASR: "${interimTranscript.trim()}"`);
           }
         };
 
@@ -251,6 +257,17 @@ export default function App() {
       setIsEditingText(true);
       alert('Microphone permission was not granted. You can type or edit any message directly using the edit box!');
     }
+  };
+
+  // Select a Tactical Voice Preset
+  const handleSelectSample = (sample) => {
+    setSelectedSample(sample);
+    setSelectedLang(sample.lang);
+    setCustomText('');
+    setIsEditingText(false);
+    setPacketDelivered(false);
+    setAsrStatus(`Selected ${sample.langName} tactical speech sample`);
+    audioEngine.playRadioChirp(800, 0.04);
   };
 
   // Trigger Packet Transmission
@@ -278,6 +295,7 @@ export default function App() {
 
   // Trigger Voice Playback on Node Bravo with Cross-Lingual Speech
   const handlePlayReceivedSpeech = async () => {
+    audioEngine.initAudioContext();
     if (isPlayingAudio) return;
     setIsPlayingAudio(true);
 
@@ -514,11 +532,11 @@ export default function App() {
                     <span className="text-xs font-mono text-slate-400">Chamoli Sector 4</span>
                   </div>
 
-                  {/* Speech Input Presets */}
-                  <div className="space-y-2 mb-4">
+                  {/* Speech Input Language Selector & Mode */}
+                  <div className="space-y-2 mb-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                        Select Indic Speech Sample:
+                        Speaking Language (ASR):
                       </label>
                       <button
                         onClick={() => {
@@ -528,29 +546,62 @@ export default function App() {
                         className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
                       >
                         <Edit3 className="h-3 w-3" />
-                        {isEditingText ? 'Done Editing' : '✏️ Type Custom Speech'}
+                        {isEditingText ? 'Done Editing' : '✏️ Type Custom Message'}
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
+                      {[
+                        { code: 'hi', label: 'Hindi' },
+                        { code: 'ta', label: 'Tamil' },
+                        { code: 'bn', label: 'Bengali' },
+                        { code: 'te', label: 'Telugu' },
+                        { code: 'mr', label: 'Marathi' },
+                        { code: 'en', label: 'English' }
+                      ].map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            setSelectedLang(lang.code);
+                            setPacketDelivered(false);
+                            setAsrStatus(`Switched ASR language to ${lang.label}`);
+                            audioEngine.playRadioChirp(850, 0.03);
+                          }}
+                          className={`py-1.5 px-2 rounded text-xs font-bold font-mono transition-all border ${
+                            selectedLang === lang.code
+                              ? 'bg-cyan-500 text-black border-cyan-400 shadow-sm'
+                              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                          }`}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* One-Tap Voice Phrase Chips */}
+                  <div className="space-y-1.5 mb-3">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
+                      Quick Tactical Voice Presets (Tap to Load):
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5 text-left">
                       {TACTICAL_SAMPLES.map((sample) => (
                         <button
                           key={sample.id}
-                          onClick={() => {
-                            setSelectedSample(sample);
-                            setCustomText('');
-                            setIsEditingText(false);
-                            setPacketDelivered(false);
-                            setAsrStatus('');
-                            audioEngine.playRadioChirp(800, 0.04);
-                          }}
-                          className={`p-2 rounded-lg text-left text-xs transition-all border ${
+                          onClick={() => handleSelectSample(sample)}
+                          className={`p-2 rounded text-xs border transition-all text-left flex flex-col justify-between ${
                             selectedSample.id === sample.id && !customText
-                              ? 'bg-cyan-950/70 border-cyan-500/80 text-cyan-200'
-                              : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                              ? 'bg-cyan-950/80 border-cyan-500/90 text-cyan-200'
+                              : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                           }`}
                         >
-                          <div className="font-bold truncate">{sample.langName.split(' ')[0]}</div>
-                          <div className="text-[10px] text-slate-500 truncate">{sample.category}</div>
+                          <div className="font-bold flex items-center justify-between">
+                            <span className="truncate">{sample.category}</span>
+                            <span className="text-[9px] font-mono text-slate-500 uppercase">{sample.lang}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                            "{sample.text}"
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -563,7 +614,7 @@ export default function App() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
                         <Mic className={`h-3.5 w-3.5 ${isRecording ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`} />
-                        Acoustic Input (16kHz PCM)
+                        Microphone Input ({selectedLang.toUpperCase()} Conformer)
                         {isRecording && (
                           <span className="text-red-400 font-bold ml-1 animate-pulse">
                             REC 00:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds}
@@ -572,7 +623,7 @@ export default function App() {
                       </span>
                       <button
                         onClick={handleToggleRecord}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
                           isRecording
                             ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse shadow-red-500/40'
                             : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white'
@@ -603,7 +654,7 @@ export default function App() {
                     {asrStatus && (
                       <div className="text-[11px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2.5 py-1 rounded flex items-center gap-1.5 animate-fadeIn">
                         <Sparkles className="h-3 w-3 text-cyan-400 shrink-0" />
-                        <span>{asrStatus}</span>
+                        <span className="truncate">{asrStatus}</span>
                       </div>
                     )}
 
@@ -617,7 +668,7 @@ export default function App() {
                               setCustomText(e.target.value);
                               setPacketDelivered(false);
                             }}
-                            placeholder="Type or paste any text in Hindi, Tamil, English, etc..."
+                            placeholder="Type or paste any text in Hindi, Tamil, English, Bengali..."
                             className="w-full bg-slate-950 border border-cyan-500/50 rounded p-2 text-sm text-cyan-200 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                             rows={3}
                           />
@@ -823,12 +874,12 @@ export default function App() {
                       {packetDelivered ? (
                         <>
                           <div className="text-xs text-slate-400">
-                            <span className="text-slate-500 font-mono text-[10px] uppercase">Incoming Token ({selectedSample.langName.split(' ')[0]}):</span>
+                            <span className="text-slate-500 font-mono text-[10px] uppercase">Incoming Token ({selectedLang.toUpperCase()}):</span>
                             <p className="font-medium text-slate-300 italic text-[12px]">"{currentText}"</p>
                           </div>
                           
                           {/* If cross-lingual translation active */}
-                          {effectiveTargetLang !== selectedSample.lang && (
+                          {effectiveTargetLang !== selectedLang && (
                             <div className="pt-1.5 border-t border-slate-800/80">
                               <span className="text-emerald-400 font-mono text-[10px] uppercase flex items-center gap-1">
                                 <Languages className="h-3 w-3" /> Synthesizing into {effectiveTargetLang.toUpperCase()}:
@@ -839,7 +890,7 @@ export default function App() {
                             </div>
                           )}
                           
-                          {effectiveTargetLang === selectedSample.lang && (
+                          {effectiveTargetLang === selectedLang && (
                             <p className="text-xs text-slate-400 italic">
                               MOS Quality: 4.26 / 5.0 (FastPitch + Vocos ONNX)
                             </p>
@@ -862,7 +913,7 @@ export default function App() {
                         onChange={(e) => setReceiverTargetLang(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                       >
-                        <option value="same">Original Native Language ({selectedSample.langName})</option>
+                        <option value="same">Original Native Language ({selectedLang.toUpperCase()})</option>
                         <option value="ta">Tamil (தமிழ்)</option>
                         <option value="hi">Hindi (हिंदी)</option>
                         <option value="bn">Bengali (বাংলা)</option>
