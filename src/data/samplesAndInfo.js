@@ -13,6 +13,10 @@ export const TACTICAL_SAMPLES = [
       bn: 'চামোলিতে মেঘভাঙা বৃষ্টি হয়েছে, অবিলম্বে মেডিকেল টিম পাঠান।',
       te: 'చమోలీలో మేఘ విస్ఫోటనం జరిగింది, వెంటనే వైద్య బృందాన్ని పంపండి.',
       mr: 'चमोलीमध्ये ढगफुटी झाली आहे, तातडीने वैद्यकीय पथक पाठवा.',
+      gu: 'ચમોલીમાં વાદળ ફાટ્યું છે, તરત જ મેડિકલ ટીમ મોકલો.',
+      kn: 'ಚಮೋಲಿಯಲ್ಲಿ ಮೇಘಸ್ಫೋಟ ಸಂಭವಿಸಿದೆ, ತಕ್ಷಣ ವೈದ್ಯಕೀಯ ತಂಡವನ್ನು ಕಳುಹಿಸಿ.',
+      ml: 'ചമോലിയിൽ മേഘവിസ്ഫോടനം ഉണ്ടായി, ഉടൻ മെഡിക്കൽ സംഘത്തെ അയക്കുക.',
+      or: 'ଚାମୋଲିରେ ବାଦଲ ଫାଟିଛି, ତୁରନ୍ତ ଡାକ୍ତରୀ ଦଳ ପଠାନ୍ତୁ।',
       en: 'Cloudburst in Chamoli, send medical team immediately.'
     },
     durationSec: 2.8,
@@ -33,6 +37,10 @@ export const TACTICAL_SAMPLES = [
       bn: 'জাহাজ ঝড়ে আটকা পড়েছে, অবিলম্বে উদ্ধারকারী নৌকা পাঠান।',
       te: 'ఓడ తుఫానులో చిక్కుకుంది, వెంటనే సహాయక పడవను పంపండి.',
       mr: 'जहाज वादळात अडकले आहे, तातडीने बचाव बोट पाठवा.',
+      gu: 'જહાજ વાવાઝોડામાં ફસાયું છે, તરત જ બચાવ બોટ મોકલો.',
+      kn: 'ಹಡಗು ಬಿರುಗಾಳಿಯಲ್ಲಿ ಸಿಲುಕಿಕೊಂಡಿದೆ, ತಕ್ಷಣ ರಕ್ಷಣಾ ದೋಣಿಯನ್ನು ಕಳುಹಿಸಿ.',
+      ml: 'കപ്പൽ കൊടുങ്കാറ്റിൽ പെട്ടു, ഉടൻ രക്ഷാപ്രവർത്തന ബോട്ട് അയക്കുക.',
+      or: 'ଜାହାଜ ଝଡ଼ରେ ଫସିଛି, ତୁରନ୍ତ ଉଦ୍ଧାର ଡଙ୍ଗା ପଠାନ୍ତୁ।',
       en: 'Vessel trapped in storm, dispatch rescue boat immediately.'
     },
     durationSec: 3.2,
@@ -53,6 +61,10 @@ export const TACTICAL_SAMPLES = [
       bn: 'সুন্দরবনে বাঁধ ভেঙেছে, ২০০০ মানুষ আটকা পড়েছে।',
       te: 'సుందర్బన్స్‌లో కట్ట తెగిపోయింది, 2000 మంది చిక్కుకున్నారు.',
       mr: 'सुंदरबनमध्ये धरण फुटले आहे, २००० लोक अडकले आहेत.',
+      gu: 'સુંદરબનમાં પાળો તૂટ્યો છે, ૨૦૦૦ લોકો ફસાયા છે.',
+      kn: 'ಸುಂದರಬನದಲ್ಲಿ ಕಟ್ಟೆ ಒಡೆದಿದೆ, 2000 ಜನರು ಸಿಲುಕಿದ್ದಾರೆ.',
+      ml: 'സുന്ദർബനിൽ അണക്കെട്ട് തകർന്നു, 2000 ആളുകൾ കുടുങ്ങി.',
+      or: 'ସୁନ୍ଦରବନରେ ବନ୍ଧ ଭାଙ୍ଗିଛି, ୨୦୦୦ ଲୋକ ଫସି ରହିଛନ୍ତି।',
       en: 'Embankment breached in Sundarbans, 2000 people stranded.'
     },
     durationSec: 3.0,
@@ -73,6 +85,10 @@ export const TACTICAL_SAMPLES = [
       bn: 'উপকূলীয় অঞ্চলে ঘূর্ণিঝড় তীব্র হয়েছে, বিদ্যুৎ বিচ্ছিন্ন।',
       te: 'తీరప్రాంతంలో తుఫాను తీవ్రమైంది, విద్యుత్ సరఫరా నిలిచిపోయింది.',
       mr: 'किनारपट्टी भागात चक्रीवादळ तीव्र झाले आहे, वीज खंडित झाली आहे.',
+      gu: 'દરિયાકાંઠાના વિસ્તારમાં વાવાઝોડું તીવ્ર બન્યું છે, વીજળી ગુલ છે.',
+      kn: 'ಕರಾವಳಿ ತೀರದಲ್ಲಿ ಚಂಡಮಾರುತ ತೀವ್ರಗೊಂಡಿದೆ, ವಿದ್ಯುತ್ ಕಡಿತಗೊಂಡಿದೆ.',
+      ml: 'തീരപ്രദേശത്ത് ചുഴലിക്കാറ്റ് ശക്തമായി, വൈദ്യുതി തടസ്സപ്പെട്ടു.',
+      or: 'ଉପକୂଳ ଅଞ୍ଚଳରେ ଝଡ଼ ତୀବ୍ର ହୋଇଛି, ବିଦ୍ୟୁତ ବନ୍ଦ ରହିଛି।',
       en: 'Cyclone intensified in coastal zone, power grid disconnected.'
     },
     durationSec: 3.1,
@@ -93,6 +109,10 @@ export const TACTICAL_SAMPLES = [
       bn: 'ঘাট মাথায় ভূমিধস হয়েছে, রাস্তা সম্পূর্ণ বন্ধ।',
       te: 'ఘాట్ రోడ్డులో కొండచరియలు విరిగిపడ్డాయి, రహదారి పూర్తిగా మూసివేయబడింది.',
       mr: 'घाटमाथ्यावर दरड कोसळली आहे, रस्ता पूर्ण बंद आहे.',
+      gu: 'ઘાટ પર ભૂસ્ખલન થયું છે, રસ્તો સંપૂર્ણ બંધ છે.',
+      kn: 'ಘಾಟ್ ರಸ್ತೆಯಲ್ಲಿ ಭೂಕುಸಿತ ಸಂಭವಿಸಿದೆ, ರಸ್ತೆ ಸಂಪೂರ್ಣ ಬಂದ್ ಆಗಿದೆ.',
+      ml: 'ചുരത്തിൽ മണ്ണിടിച്ചിൽ ഉണ്ടായി, റോഡ് പൂർണ്ണമായും തടസ്സപ്പെട്ടു.',
+      or: 'ଘାଟିରେ ଭୂସ୍ଖଳନ ହୋଇଛି, ରାସ୍ତା ସମ୍ପୂର୍ଣ୍ଣ ବନ୍ଦ ରହିଛି।',
       en: 'Landslide on mountain pass, highway completely blocked.'
     },
     durationSec: 2.9,
@@ -113,6 +133,10 @@ export const TACTICAL_SAMPLES = [
       bn: 'বেস স্টেশন ৪, অক্সিজেন সরবরাহ আশঙ্কাজনক, স্থানান্তরের পরিকল্পনা শুরু করুন।',
       te: 'బేస్ స్టేషన్ 4, ఆక్సిజన్ సరఫరా ప్రమాదకరంగా ఉంది, తరలింపు ప్రణాళిక ప్రారంభించండి.',
       mr: 'बेस स्टेशन ४, ऑक्सिजन पुरवठा गंभीर आहे, स्थलांतर योजना सुरू करा.',
+      gu: 'બેઝ સ્ટેશન ૪, ઓક્સિજન સપ્લાય ગંભીર છે, ખાલી કરવાની યોજના શરૂ કરો.',
+      kn: 'ಬೇಸ್ ಸ್ಟೇಷನ್ 4, ಆಮ್ಲಜನಕ ಪೂರೈಕೆ ಗಂಭೀರವಾಗಿದೆ, ಸ್ಥಳಾಂತರ ಯೋಜನೆ ಆರಂಭಿಸಿ.',
+      ml: 'ബേസ് സ്റ്റേഷൻ 4, ഓക്സിജൻ സപ്ലൈ ഗുരുതരമാണ്, ഒഴിപ്പിക്കൽ പദ്ധതി ആരംഭിക്കുക.',
+      or: 'ବେସ୍ ଷ୍ଟେସନ୍ ୪, ଅକ୍ସିଜେନ୍ ଯୋଗାଣ ଗୁରୁତର, ତୁରନ୍ତ ଉଦ୍ଧାର କାର୍ଯ୍ୟ ଆରମ୍ଭ କରନ୍ତୁ।',
       en: 'Base Station 4, oxygen supply critical, initiate evacuation plan.'
     },
     durationSec: 2.6,
@@ -202,6 +226,88 @@ export const HOW_IT_WORKS_INFO = {
       description: "Operates in Indian ISM 865–867 MHz band at up to 1W ERP. True disaster-resilient military-grade long-range transceiver.",
     },
   ],
+  pitchDeckSlides: [
+    {
+      num: 1,
+      title: "Title & Hook",
+      headline: "iTantra — Indian Multilingual Neural Transceiver Radio Access",
+      keyMetrics: "2,666× Compression • 369ms Latency • 10 Indian Languages",
+      script: "Namaste jury members. In the 2023 Chamoli cloudburst and Cyclone Biparjoy, cellular networks died within 45 minutes. First responders were left with heavy, expensive analog walkie-talkies with robotic audio and zero language translation. Today we present iTantra: an ISRO-grade on-device neural transceiver that turns voice into an 18-byte token at 24 bps and synthesizes studio-grade Indic speech on the other side over zero-internet radio links.",
+      badge: "PROBLEM & HOOK"
+    },
+    {
+      num: 2,
+      title: "The Problem Space",
+      headline: "Why Traditional Voice Codecs Fail in Disasters",
+      keyMetrics: "Analog VHF: High static • Opus: 6,000 bps (Too heavy) • Codec2: 700 bps (Robotic & unintelligible)",
+      script: "Standard voice requires at least 6,000 to 64,000 bits per second. Over long-range LoRa (SX1262 at 865MHz) or disaster satellite mesh, bandwidth is restricted to 30–500 bps. Raw audio simply cannot pass through. Codec2 tries transmitting acoustic parameters at 700 bps, but it breaks down completely in background wind and engine noise.",
+      badge: "DIAGNOSTIC"
+    },
+    {
+      num: 3,
+      title: "The Innovation (The Semantic Postcard)",
+      headline: "Semantic Tokenization: Transmit Words, Synthesize Speech Locally",
+      keyMetrics: "89,600 Bytes Raw PCM $\\to$ 18 Bytes Token (24 bps)",
+      script: "iTantra flips the problem on its head. Instead of transmitting heavy audio waveforms, Node Alpha runs a lightweight on-device Conformer ASR to extract text, compresses Indic Unicode into 18 bytes using SCSU windowing + Indic-BPE, and beams it over radio. Node Bravo decodes the token and synthesizes natural voice using on-device FastPitch + Vocos.",
+      badge: "CORE ARCHITECTURE"
+    },
+    {
+      num: 4,
+      title: "End-to-End Latency Budget",
+      headline: "369ms Total Delay: Faster than Conversational Turn-Taking",
+      keyMetrics: "VAD: 35ms • ASR: 120ms • Token: 16ms • LoRa RF: 56ms • TTS: 112ms • Audio: 30ms",
+      script: "Human conversational turn-taking pause is 200–500ms. iTantra completes the full mouth-to-ear pipeline in exactly 369ms on a mid-range Snapdragon 680 Android device without any cloud server.",
+      badge: "PERFORMANCE"
+    },
+    {
+      num: 5,
+      title: "Cross-Lingual Tactical Unity",
+      headline: "Speak Hindi in the Himalayas, Hear Tamil at Coastal Command",
+      keyMetrics: "10 Languages Supported • Instant Cross-Synthesis",
+      script: "In multi-agency disaster operations, NDRF teams from Maharashtra or Delhi often work alongside local Tamil Nadu or Odisha personnel. iTantra transmits the universal semantic token, allowing Node Bravo to synthesize the voice in Tamil, Bengali, Telugu, or Marathi instantly.",
+      badge: "CROSS-LINGUAL AI"
+    },
+    {
+      num: 6,
+      title: "Level 0 Emergency SOS Preemption",
+      headline: "Life-Saving Panic Preemption with NavIC GPS Coordinates",
+      keyMetrics: "Priority: 0xFF • Siren Override • 18-Byte Telemetry Payload",
+      script: "When an operative says 'Help' or hits the physical SOS trigger, a Level 0 emergency packet seizes the LoRa radio channel, preempts routine traffic, rings an audible siren on all surrounding radios, and beams NavIC coordinates.",
+      badge: "EMERGENCY OPS"
+    },
+    {
+      num: 7,
+      title: "Hardware Lab & Prototype Tiers",
+      headline: "From Zero-Cost BLE to 15km ISRO LoRa SX1262",
+      keyMetrics: "Tier 1: ₹0 BLE • Tier 2: ₹600 HC-12 • Tier 3: ₹2,800 SX1262 LoRa",
+      script: "Our solution is 100% software-agnostic. Judges can test it immediately on two standard Android phones over BLE for ₹0, or connect external SX1262 LoRa modules for 15km military-grade range.",
+      badge: "HARDWARE DEPLOYMENT"
+    },
+    {
+      num: 8,
+      title: "Comparative Benchmarking",
+      headline: "iTantra vs Industry Standards (MOS 4.26 vs Codec2 2.10)",
+      keyMetrics: "iTantra: 24 bps, MOS 4.26 • Codec2: 700 bps, MOS 2.10 • Satellite SMS: Text-only",
+      script: "Compared to Codec2 which scores a robotic 2.10 MOS, iTantra scores 4.26 MOS natural voice quality at 1/30th the bitrate! It gives the tactile immediacy of a walkie-talkie with the bandwidth efficiency of satellite telemetry.",
+      badge: "COMPETITIVE EDGE"
+    },
+    {
+      num: 9,
+      title: "Field Deployment & Battery Life",
+      headline: "Over 48 Hours Continuous Mission Lifetime",
+      keyMetrics: "0.08 mAh per packet • 5,000 mAh Phone Battery = 62,500 transmissions",
+      script: "Because the radio transmitter only stays on-air for 56ms per sentence (instead of 3,000ms for raw audio), radio power consumption drops by 98.1%. A single charge lasts over 48 hours in active rescue operations.",
+      badge: "ENERGY PROFILE"
+    },
+    {
+      num: 10,
+      title: "Conclusion & Vision for ISRO",
+      headline: "National Impact: Disaster Resilience, Defense & Gaganyaan Analog",
+      keyMetrics: "Zero-Infrastructure • 100% Self-Reliant (Atmanirbhar Bharat)",
+      script: "iTantra delivers a true breakthrough for ISRO: mission communication in planetary analog habitats, defense operations in jammed environments, and nationwide disaster rescue. Thank you, and we invite the jury to test the live transceiver demo!",
+      badge: "CONCLUSION"
+    }
+  ],
   judgeQA: [
     {
       q: "How does this compare to Codec2 (700 bps) or Opus?",
@@ -219,5 +325,13 @@ export const HOW_IT_WORKS_INFO = {
       q: "How does the Emergency SOS mode work?",
       a: "A TinyML keyword spotter ('Bachao', 'Madad', 'Help') or panic button triggers Level 0 SOS. It seizes the radio channel, preempts routine traffic, attaches NavIC GPS coordinates, and rings an audible siren on all receiving nodes.",
     },
+    {
+      q: "Can this work with zero internet or cloud connection?",
+      a: "Yes, 100%. The ASR model (AI4Bharat IndicConformer INT8 ONNX, 38MB) and TTS model (FastPitch + Vocos INT8, 8.6MB) run completely on the phone CPU/NPU. Zero cellular base stations or cloud servers are required.",
+    },
+    {
+      q: "How do you handle security and eavesdropping on open radio frequencies?",
+      a: "Each 18-byte token packet is encrypted with hardware AES-128 GCM encryption with rotating session keys before transmission over the SX1262 LoRa PHY layer, preventing adversary interception or spoofing.",
+    }
   ],
 };

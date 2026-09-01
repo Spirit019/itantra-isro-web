@@ -1,9 +1,9 @@
 /* 
 <!--
 THESIS: iTantra replaces sluggish multi-kilobit audio streams with a hyper-compressed 18-byte neural token stream (24 bps) that synthesizes studio-grade Indic speech on-device over zero-internet radio links.
-OWN-WORLD: Tactical ISRO Mission Control HUD on deep matte obsidian (#060911), high-visibility telemetry cyan (#00E5FF), radar emerald (#10B981), satcom amber (#F59E0B), and emergency vermilion (#EF4444) with precision micro-borders and tabular telemetry readouts.
+OWN-WORLD: Tactical ISRO Mission Control HUD on deep matte obsidian (#060911), high-visibility telemetry cyan (#00E5FF), radar emerald (#10B981), satcom amber (#F59E0B), and emergency vermilion (#EF4444) with live canvas radar scopes and precision tabular telemetry readouts.
 STORY: An operator or SIH judge experiences the full 369ms pipeline: speaking in an Indian regional dialect at a Himalayan outpost, compressing to an 18-byte packet, beaming across a LoRa radio channel, and synthesizing in native Tamil/Bengali at Coastal Command.
-FIRST VIEWPORT: Dual-node tactical transceiver command console with Node Alpha (Field Transmitter), Air Interface (LoRa 865MHz RF Simulator), and Node Bravo (HQ Synthesizer) with live FFT audio visualizer, 18-byte hex inspector, and Level 0 SOS preemption.
+FIRST VIEWPORT: Dual-node tactical transceiver command console with Node Alpha (Field Transmitter), Air Interface (LoRa 865MHz RF Simulator with Canvas Radar Scope), and Node Bravo (HQ Synthesizer) with live FFT audio visualizer, 18-byte hex inspector, and Level 0 SOS preemption.
 FORM: Candidate 3 (Deep Aerospace Command HUD & Precision Telemetry Console), seed key e9422a6c.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 -->
@@ -46,13 +46,24 @@ import {
   Terminal,
   Signal,
   RadioTower,
-  Headphones
+  Headphones,
+  ChevronRight,
+  ChevronLeft,
+  Presentation,
+  Award,
+  Lock,
+  Download,
+  Share2,
+  Eye,
+  SlidersHorizontal,
+  HardDrive
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { TACTICAL_SAMPLES, HOW_IT_WORKS_INFO } from './data/samplesAndInfo';
 import { audioEngine } from './utils/audioEngine';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('demo'); // demo | architecture | latency | hardware | judge_qa
+  const [activeTab, setActiveTab] = useState('demo'); // demo | architecture | pitch_deck | latency | hardware | judge_qa
   const [selectedLang, setSelectedLang] = useState('hi'); // Speaking input language
   const [selectedSample, setSelectedSample] = useState(TACTICAL_SAMPLES[0]);
   const [customText, setCustomText] = useState('');
@@ -63,8 +74,11 @@ export default function App() {
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [packetDelivered, setPacketDelivered] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isPlayingRawPcm, setIsPlayingRawPcm] = useState(false);
   const [asrStatus, setAsrStatus] = useState(''); // Live ASR feedback
   const [liveAsrLatency, setLiveAsrLatency] = useState(120);
+  const [activeByteIndex, setActiveByteIndex] = useState(null); // Clicked byte for inspector modal
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0); // Slide deck state
   
   // Radio Channel Settings
   const [radioMode, setRadioMode] = useState('lora'); // lora | ble | hc12
@@ -75,7 +89,7 @@ export default function App() {
 
   // SOS Emergency State
   const [isEmergencySos, setIsEmergencySos] = useState(false);
-  const [receiverTargetLang, setReceiverTargetLang] = useState('same'); // same | en | hi | ta | bn | te | mr
+  const [receiverTargetLang, setReceiverTargetLang] = useState('same'); // same | en | hi | ta | bn | te | mr | gu | kn | ml | or
 
   // Audio Visualizer Simulation
   const [waveformData, setWaveformData] = useState([15, 30, 60, 45, 80, 55, 90, 40, 70, 30, 20]);
@@ -90,6 +104,11 @@ export default function App() {
   const animFrameRef = useRef(null);
   const liveTranscriptRef = useRef('');
   const recordStartTimeRef = useRef(0);
+
+  // Radar Canvas Ref
+  const radarCanvasRef = useRef(null);
+  const radarAngleRef = useRef(0);
+  const radarAnimRef = useRef(null);
 
   // Time-on-Air (ToA) Calculation in ms
   const calculateToA = () => {
@@ -121,7 +140,7 @@ export default function App() {
   // Dynamic 18-Byte Token Generator for Custom or Selected Text
   const generate18ByteTokens = (text, langCode, isSos) => {
     const header = 0x54;
-    const langMap = { hi: 1, ta: 2, bn: 3, te: 4, mr: 5, en: 10 };
+    const langMap = { hi: 1, ta: 2, bn: 3, te: 4, mr: 5, gu: 6, kn: 7, ml: 8, or: 9, en: 10 };
     const langId = langMap[langCode] || 1;
     const priority = isSos ? 0xFF : 0x00;
     const speaker = [0x8A, 0x3F];
@@ -143,6 +162,110 @@ export default function App() {
   const currentTokens = generate18ByteTokens(currentText, selectedLang, isEmergencySos);
   const rawPcmBytes = customText ? Math.max(64000, currentText.length * 3200) : selectedSample.pcmBytes;
   const compressionRatio = Math.round(rawPcmBytes / 18);
+
+  // Animate Radar Canvas
+  useEffect(() => {
+    const canvas = radarCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = (canvas.width = canvas.parentElement?.clientWidth || 240);
+    let height = (canvas.height = 180);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(centerX, centerY) - 15;
+
+    const renderRadar = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // Radar Dark Grid
+      ctx.fillStyle = '#070c18';
+      ctx.fillRect(0, 0, width, height);
+
+      // Range Rings (5km, 10km, 15km)
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.2)';
+      ctx.lineWidth = 1;
+      for (let r = 1; r <= 3; r++) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, (radius / 3) * r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(centerX - radius, centerY);
+      ctx.lineTo(centerX + radius, centerY);
+      ctx.moveTo(centerX, centerY - radius);
+      ctx.lineTo(centerX, centerY + radius);
+      ctx.stroke();
+
+      // Rotating Sweep Beam
+      radarAngleRef.current = (radarAngleRef.current + 0.03) % (Math.PI * 2);
+      const sweepX = centerX + Math.cos(radarAngleRef.current) * radius;
+      const sweepY = centerY + Math.sin(radarAngleRef.current) * radius;
+
+      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+      gradient.addColorStop(0, 'rgba(0, 229, 255, 0.4)');
+      gradient.addColorStop(1, 'rgba(0, 229, 255, 0)');
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, radarAngleRef.current - 0.4, radarAngleRef.current);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Sweep Line
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(sweepX, sweepY);
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Node Alpha Blip (Left)
+      const alphaX = centerX - radius * 0.65;
+      const alphaY = centerY + radius * 0.2;
+      ctx.fillStyle = '#00e5ff';
+      ctx.beginPath();
+      ctx.arc(alphaX, alphaY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = '9px monospace';
+      ctx.fillStyle = '#7dd3fc';
+      ctx.fillText('NODE α (TX)', alphaX - 25, alphaY - 8);
+
+      // Node Bravo Blip (Right)
+      const bravoX = centerX + radius * 0.65;
+      const bravoY = centerY - radius * 0.2;
+      ctx.fillStyle = packetDelivered ? '#10b981' : '#64748b';
+      ctx.beginPath();
+      ctx.arc(bravoX, bravoY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = packetDelivered ? '#6ee7b7' : '#94a3b8';
+      ctx.fillText('NODE β (RX)', bravoX - 25, bravoY + 16);
+
+      // In-flight Packet Arc
+      if (isTransmitting) {
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(alphaX, alphaY);
+        ctx.quadraticCurveTo(centerX, centerY - radius * 0.7, bravoX, bravoY);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      radarAnimRef.current = requestAnimationFrame(renderRadar);
+    };
+
+    renderRadar();
+
+    return () => {
+      if (radarAnimRef.current) cancelAnimationFrame(radarAnimRef.current);
+    };
+  }, [isTransmitting, packetDelivered]);
 
   // Clean up and finalize recording instantly
   const stopRecordingCleanly = () => {
@@ -243,7 +366,7 @@ export default function App() {
         const recognition = new SpeechRec();
         recognitionRef.current = recognition;
         
-        const langMap = { hi: 'hi-IN', ta: 'ta-IN', bn: 'bn-IN', te: 'te-IN', mr: 'mr-IN', en: 'en-IN' };
+        const langMap = { hi: 'hi-IN', ta: 'ta-IN', bn: 'bn-IN', te: 'te-IN', mr: 'mr-IN', gu: 'gu-IN', kn: 'kn-IN', ml: 'ml-IN', or: 'or-IN', en: 'en-IN' };
         recognition.lang = langMap[selectedLang] || 'hi-IN';
         recognition.continuous = true;
         recognition.interimResults = true;
@@ -329,6 +452,17 @@ export default function App() {
     }
   };
 
+  // Play Raw PCM audio (Simulating heavy, uncompressed, noisy radio audio)
+  const handlePlayRawPcm = () => {
+    audioEngine.initAudioContext();
+    if (isPlayingRawPcm) return;
+    setIsPlayingRawPcm(true);
+    audioEngine.playRadioChirp(400, 1.8);
+    setTimeout(() => {
+      setIsPlayingRawPcm(false);
+    }, 1800);
+  };
+
   // Trigger Emergency Level 0 SOS
   const handleTriggerEmergencySos = () => {
     setIsEmergencySos(true);
@@ -341,10 +475,19 @@ export default function App() {
     audioEngine.stopSpeech();
   };
 
+  // Trigger Presentation Confetti
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#060911] text-slate-100 font-sans flex flex-col selection:bg-cyan-500 selection:text-black">
       {/* Top Header / Tactical Mission Status */}
-      <header className="border-b border-slate-800 bg-[#0c121e]/95 backdrop-blur sticky top-0 z-50">
+      <header className="border-b border-slate-800/80 bg-[#0c121e]/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
@@ -406,7 +549,18 @@ export default function App() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Zap className="h-4 w-4" /> 1. Live Working Transceiver Demo
+            <Zap className="h-4 w-4" /> 1. Live Transceiver Console
+          </button>
+
+          <button
+            onClick={() => setActiveTab('pitch_deck')}
+            className={`px-3.5 py-1.5 rounded-t-md transition-colors flex items-center gap-1.5 ${
+              activeTab === 'pitch_deck'
+                ? 'bg-slate-900 text-cyan-400 border-b-2 border-cyan-400 font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Presentation className="h-4 w-4" /> 2. SIH 2026 Jury Pitch Deck (10 Slides)
           </button>
 
           <button
@@ -417,7 +571,7 @@ export default function App() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Layers className="h-4 w-4" /> 2. How It Works (Pipeline)
+            <Layers className="h-4 w-4" /> 3. How It Works (Pipeline)
           </button>
 
           <button
@@ -428,7 +582,7 @@ export default function App() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Clock className="h-4 w-4" /> 3. Latency & Bandwidth (369ms)
+            <Clock className="h-4 w-4" /> 4. Latency & Bandwidth (369ms)
           </button>
 
           <button
@@ -439,7 +593,7 @@ export default function App() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Cpu className="h-4 w-4" /> 4. Hardware Lab (₹0 - ₹2,800)
+            <Cpu className="h-4 w-4" /> 5. Hardware Lab & Pinouts (₹0 - ₹2,800)
           </button>
 
           <button
@@ -450,7 +604,7 @@ export default function App() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <HelpCircle className="h-4 w-4" /> 5. SIH Judge Q&A Rebuttal
+            <HelpCircle className="h-4 w-4" /> 6. SIH Judge Q&A Rebuttal
           </button>
         </div>
       </header>
@@ -486,7 +640,7 @@ export default function App() {
           <div className="space-y-6">
             {/* Top Tactical Telemetry Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono">
-              <div className="bg-[#0e1626] border border-cyan-500/30 rounded-xl p-3 shadow-md">
+              <div className="bg-[#0e1626] border border-cyan-500/30 rounded-xl p-3.5 shadow-md">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
                   <span>COMPRESSION</span>
                   <Gauge className="h-3.5 w-3.5 text-cyan-400" />
@@ -495,7 +649,7 @@ export default function App() {
                 <div className="text-[10px] text-slate-500 mt-0.5">64,000 bps $\to$ 24 bps</div>
               </div>
 
-              <div className="bg-[#0e1626] border border-emerald-500/30 rounded-xl p-3 shadow-md">
+              <div className="bg-[#0e1626] border border-emerald-500/30 rounded-xl p-3.5 shadow-md">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
                   <span>TOTAL LATENCY</span>
                   <Clock className="h-3.5 w-3.5 text-emerald-400" />
@@ -504,16 +658,16 @@ export default function App() {
                 <div className="text-[10px] text-slate-500 mt-0.5">Mouth-to-Ear Total Delay</div>
               </div>
 
-              <div className="bg-[#0e1626] border border-amber-500/30 rounded-xl p-3 shadow-md">
+              <div className="bg-[#0e1626] border border-amber-500/30 rounded-xl p-3.5 shadow-md">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
                   <span>RADIO BAND</span>
                   <RadioTower className="h-3.5 w-3.5 text-amber-400" />
                 </div>
-                <div className="text-xl font-bold text-amber-300">865 MHz</div>
+                <div className="text-xl font-bold text-amber-300">865.20 MHz</div>
                 <div className="text-[10px] text-slate-500 mt-0.5">Indian ISM LoRa / BLE 5.0</div>
               </div>
 
-              <div className="bg-[#0e1626] border border-purple-500/30 rounded-xl p-3 shadow-md">
+              <div className="bg-[#0e1626] border border-purple-500/30 rounded-xl p-3.5 shadow-md">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
                   <span>ON-DEVICE AI</span>
                   <Cpu className="h-3.5 w-3.5 text-purple-400" />
@@ -523,53 +677,43 @@ export default function App() {
               </div>
             </div>
 
-            {/* Radio Mode Selector Bar */}
-            <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-mono text-slate-400 uppercase">Radio Physical Layer:</span>
-                <button
-                  onClick={() => setRadioMode('lora')}
-                  className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
-                    radioMode === 'lora'
-                      ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  📡 LoRa SX1262 (865 MHz)
-                </button>
-                <button
-                  onClick={() => setRadioMode('ble')}
-                  className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
-                    radioMode === 'ble'
-                      ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  📶 BLE 5.0 Coded PHY (₹0 Setup)
-                </button>
-                <button
-                  onClick={() => setRadioMode('hc12')}
-                  className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
-                    radioMode === 'hc12'
-                      ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  📻 433 MHz HC-12 Serial
-                </button>
+            {/* Audible Audio Comparison Sandbox (Raw vs iTantra 18-Byte) */}
+            <div className="bg-gradient-to-r from-slate-900 via-[#0e1626] to-slate-900 border border-cyan-500/30 rounded-xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Headphones className="h-4 w-4" /> AUDIBLE JURY BENCHMARK TEST:
+                </span>
+                <p className="text-xs text-slate-300">
+                  Hear the dramatic audible difference between traditional heavy audio vs iTantra 18-byte neural synthesis.
+                </p>
               </div>
 
-              {/* Faraday Cage Toggle */}
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-mono text-slate-400 cursor-pointer flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={faradayCageActive}
-                    onChange={(e) => setFaradayCageActive(e.target.checked)}
-                    className="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-cyan-500"
-                  />
-                  <span>Faraday Cage (Zero Internet / 100% Offline Mode)</span>
-                </label>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePlayRawPcm}
+                  disabled={isPlayingRawPcm}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 border transition-all ${
+                    isPlayingRawPcm
+                      ? 'bg-amber-950/80 border-amber-500 text-amber-300 animate-pulse'
+                      : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <VolumeX className="h-3.5 w-3.5 text-amber-400" />
+                  {isPlayingRawPcm ? 'Playing Raw Audio Static...' : '1. Play Raw PCM (89.6 KB • 64 kbps)'}
+                </button>
+
+                <button
+                  onClick={handlePlayReceivedSpeech}
+                  disabled={isPlayingAudio}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 border transition-all ${
+                    isPlayingAudio
+                      ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 animate-pulse'
+                      : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-black font-bold shadow-md shadow-emerald-500/20'
+                  }`}
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-black" />
+                  {isPlayingAudio ? 'Synthesizing Neural AI Voice...' : '2. Play iTantra 18-Byte AI Voice (24 bps)'}
+                </button>
               </div>
             </div>
 
@@ -591,7 +735,7 @@ export default function App() {
                   {/* Speech Input Language Selector */}
                   <div className="space-y-2 mb-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block font-mono">
                         Speaking Language (IndicConformer ASR):
                       </label>
                       <button
@@ -766,43 +910,80 @@ export default function App() {
                   {/* 18-Byte Hex Inspector */}
                   <div className="mt-4 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                      <span>18-BYTE NEURAL TOKEN PACKET:</span>
+                      <span>18-BYTE NEURAL TOKEN PACKET (CLICK BYTE TO INSPECT):</span>
                       <span className="text-cyan-400 font-bold">24 bps Bitrate</span>
                     </div>
                     <div className="grid grid-cols-6 sm:grid-cols-9 gap-1 bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-mono text-xs text-center">
                       {currentTokens.map((byte, idx) => {
                         let tag = 'BPE';
-                        let color = 'text-cyan-300 bg-cyan-950/60 border-cyan-800/60';
+                        let color = 'text-cyan-300 bg-cyan-950/60 border-cyan-800/60 hover:border-cyan-400';
                         if (idx === 0) {
                           tag = 'HDR';
-                          color = 'text-amber-300 bg-amber-950/60 border-amber-800/60';
+                          color = 'text-amber-300 bg-amber-950/60 border-amber-800/60 hover:border-amber-400';
                         } else if (idx === 1) {
                           tag = 'LANG';
-                          color = 'text-purple-300 bg-purple-950/60 border-purple-800/60';
+                          color = 'text-purple-300 bg-purple-950/60 border-purple-800/60 hover:border-purple-400';
                         } else if (idx === 2) {
                           tag = 'PRIO';
                           color = isEmergencySos
                             ? 'text-red-400 bg-red-950/90 border-red-600 font-bold'
-                            : 'text-blue-300 bg-blue-950/60 border-blue-800/60';
+                            : 'text-blue-300 bg-blue-950/60 border-blue-800/60 hover:border-blue-400';
                         } else if (idx >= 3 && idx <= 4) {
                           tag = 'VOX';
-                          color = 'text-emerald-300 bg-emerald-950/60 border-emerald-800/60';
+                          color = 'text-emerald-300 bg-emerald-950/60 border-emerald-800/60 hover:border-emerald-400';
                         } else if (idx >= 16) {
                           tag = 'CRC';
-                          color = 'text-rose-300 bg-rose-950/60 border-rose-800/60';
+                          color = 'text-rose-300 bg-rose-950/60 border-rose-800/60 hover:border-rose-400';
                         }
 
                         const byteHex = `0x${byte.toString(16).toUpperCase().padStart(2, '0')}`;
 
                         return (
-                          <div key={idx} className={`p-1 rounded border ${color} flex flex-col`}>
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setActiveByteIndex(idx);
+                              audioEngine.playRadioChirp(1000 + idx * 50, 0.03);
+                            }}
+                            className={`p-1 rounded border ${color} flex flex-col transition-all cursor-pointer ${
+                              activeByteIndex === idx ? 'ring-2 ring-cyan-400 scale-105' : ''
+                            }`}
+                          >
                             <span className="font-bold text-[11px]">{byteHex}</span>
                             <span className="text-[8px] text-slate-500 uppercase">{tag}</span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
                   </div>
+
+                  {/* Active Byte Inspection Modal Detail */}
+                  {activeByteIndex !== null && (
+                    <div className="bg-slate-950 border border-cyan-500/50 rounded-lg p-3 text-xs font-mono space-y-1 animate-fadeIn">
+                      <div className="flex items-center justify-between text-cyan-300 font-bold">
+                        <span>Byte #{activeByteIndex}: 0x{currentTokens[activeByteIndex].toString(16).toUpperCase().padStart(2, '0')}</span>
+                        <button
+                          onClick={() => setActiveByteIndex(null)}
+                          className="text-slate-500 hover:text-slate-300 text-[10px]"
+                        >
+                          ✕ Close
+                        </button>
+                      </div>
+                      <p className="text-slate-300">
+                        {activeByteIndex === 0
+                          ? 'Protocol Header (0x54 = "T" for iTantra Neural Token Frame)'
+                          : activeByteIndex === 1
+                          ? `Language Identifier (${selectedLang.toUpperCase()} = Code ${currentTokens[1]})`
+                          : activeByteIndex === 2
+                          ? `Priority Level (${isEmergencySos ? '0xFF = Level 0 Preemptive SOS' : '0x00 = Routine Voice Queue'})`
+                          : activeByteIndex >= 3 && activeByteIndex <= 4
+                          ? `Speaker Embedding & Pitch Vector (Quantized 16-bit acoustic codebook)`
+                          : activeByteIndex >= 16
+                          ? `Reed-Solomon RS(32,24) & CRC16 Parity Checksum (Error recovery up to 4 bytes)`
+                          : `SCSU + Indic-BPE Semantic Token Segment #${activeByteIndex - 4}`}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Transmit Button */}
@@ -812,7 +993,7 @@ export default function App() {
                   className={`w-full py-3.5 rounded-lg font-bold text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg font-mono ${
                     isTransmitting
                       ? 'bg-cyan-700 text-white cursor-wait'
-                      : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-cyan-500/20'
+                      : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-cyan-500/20 cursor-pointer'
                   }`}
                 >
                   <Send className={`h-4 w-4 ${isTransmitting ? 'animate-spin' : ''}`} />
@@ -820,7 +1001,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* MIDDLE COLUMN: RADIO CHANNEL SIMULATION */}
+              {/* MIDDLE COLUMN: RADIO CHANNEL SIMULATION WITH CANVAS RADAR */}
               <div className="lg:col-span-2 bg-[#0c121e] border border-slate-800 rounded-xl p-4 flex flex-col justify-between items-center text-center space-y-4">
                 <div className="w-full">
                   <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider block mb-1">
@@ -831,24 +1012,21 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* Animated Radio Waves */}
-                <div className="w-full my-auto py-6 flex flex-col items-center justify-center">
-                  <div className="relative flex items-center justify-center h-24 w-24">
-                    <div className={`absolute inset-0 rounded-full border-2 border-cyan-500/30 ${isTransmitting ? 'animate-ping' : ''}`} />
-                    <div className="h-16 w-16 rounded-full bg-cyan-950/60 border border-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                      <Radio className={`h-8 w-8 text-cyan-400 ${isTransmitting ? 'animate-bounce' : ''}`} />
-                    </div>
+                {/* Live Canvas Radar Scope */}
+                <div className="w-full relative flex flex-col items-center justify-center">
+                  <div className="rounded-lg overflow-hidden border border-cyan-500/40 shadow-lg shadow-cyan-950/40 w-full">
+                    <canvas ref={radarCanvasRef} className="w-full h-auto block" />
                   </div>
 
                   {/* Packet Flight Indicator */}
-                  <div className="mt-3 text-xs font-mono">
+                  <div className="mt-2 text-xs font-mono">
                     {isTransmitting ? (
                       <span className="text-cyan-300 animate-pulse font-bold">
                         ⚡ Packet Flying: {timeOnAirMs}ms
                       </span>
                     ) : packetDelivered ? (
-                      <span className="text-emerald-400 font-bold flex items-center gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> DELIVERED
+                      <span className="text-emerald-400 font-bold flex items-center gap-1 justify-center">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> DELIVERED (CRC OK)
                       </span>
                     ) : (
                       <span className="text-slate-500">Radio Channel Ready</span>
@@ -975,6 +1153,10 @@ export default function App() {
                         <option value="bn">Bengali (বাংলা)</option>
                         <option value="te">Telugu (తెలుగు)</option>
                         <option value="mr">Marathi (मराठी)</option>
+                        <option value="gu">Gujarati (ગુજરાતી)</option>
+                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                        <option value="ml">Malayalam (മലയാളം)</option>
+                        <option value="or">Odia (ଓଡ଼ିଆ)</option>
                         <option value="en">English (Indian)</option>
                       </select>
                     </div>
@@ -1007,7 +1189,7 @@ export default function App() {
                       ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                       : isPlayingAudio
                       ? 'bg-emerald-600 text-white animate-pulse'
-                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black shadow-emerald-500/20'
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black shadow-emerald-500/20 cursor-pointer'
                   }`}
                 >
                   <Volume2 className={`h-4 w-4 ${isPlayingAudio ? 'animate-bounce' : ''}`} />
@@ -1018,7 +1200,104 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: HOW IT WORKS (PIPELINE & ARCHITECTURE) */}
+        {/* TAB 2: SIH 2026 JURY PITCH DECK */}
+        {activeTab === 'pitch_deck' && (
+          <div className="space-y-6">
+            <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+              {/* Pitch Header with Slide Controller */}
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                      {HOW_IT_WORKS_INFO.pitchDeckSlides[currentSlideIndex].badge}
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">
+                      Slide {currentSlideIndex + 1} of {HOW_IT_WORKS_INFO.pitchDeckSlides.length}
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-white mt-1">
+                    {HOW_IT_WORKS_INFO.pitchDeckSlides[currentSlideIndex].headline}
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
+                    disabled={currentSlideIndex === 0}
+                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+
+                  <span className="font-mono text-xs text-cyan-300 px-2">
+                    {currentSlideIndex + 1} / {HOW_IT_WORKS_INFO.pitchDeckSlides.length}
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      if (currentSlideIndex === HOW_IT_WORKS_INFO.pitchDeckSlides.length - 1) {
+                        triggerConfetti();
+                      }
+                      setCurrentSlideIndex(Math.min(HOW_IT_WORKS_INFO.pitchDeckSlides.length - 1, currentSlideIndex + 1));
+                    }}
+                    disabled={currentSlideIndex === HOW_IT_WORKS_INFO.pitchDeckSlides.length - 1}
+                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+
+                  <button
+                    onClick={triggerConfetti}
+                    className="ml-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer"
+                  >
+                    <Award className="h-4 w-4" /> Ready for Jury Pitch!
+                  </button>
+                </div>
+              </div>
+
+              {/* Slide Body Card */}
+              <div className="bg-slate-950 border border-cyan-500/30 rounded-xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold">
+                    Key Performance Metrics:
+                  </span>
+                  <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-500/40">
+                    {HOW_IT_WORKS_INFO.pitchDeckSlides[currentSlideIndex].keyMetrics}
+                  </span>
+                </div>
+
+                {/* Presenter Spoken Script */}
+                <div className="bg-[#0e1626] p-5 rounded-lg border border-slate-800/80 space-y-2">
+                  <span className="text-xs font-mono text-amber-400 font-bold uppercase flex items-center gap-1.5">
+                    <Mic className="h-3.5 w-3.5" /> Presenter Script (Say this to the ISRO Jury):
+                  </span>
+                  <p className="text-sm text-slate-200 leading-relaxed italic">
+                    "{HOW_IT_WORKS_INFO.pitchDeckSlides[currentSlideIndex].script}"
+                  </p>
+                </div>
+              </div>
+
+              {/* Slide Navigation Thumbnails */}
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 pt-2">
+                {HOW_IT_WORKS_INFO.pitchDeckSlides.map((slide, idx) => (
+                  <button
+                    key={slide.num}
+                    onClick={() => setCurrentSlideIndex(idx)}
+                    className={`p-2 rounded text-center text-xs font-mono font-bold transition-all border cursor-pointer ${
+                      currentSlideIndex === idx
+                        ? 'bg-cyan-500 text-black border-cyan-400 shadow-md shadow-cyan-500/20'
+                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: HOW IT WORKS (PIPELINE & ARCHITECTURE) */}
         {activeTab === 'architecture' && (
           <div className="space-y-6">
             <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl">
@@ -1056,7 +1335,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: LATENCY & BANDWIDTH CALCULATOR */}
+        {/* TAB 4: LATENCY & BANDWIDTH CALCULATOR */}
         {activeTab === 'latency' && (
           <div className="space-y-6">
             <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
@@ -1113,13 +1392,13 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 4: HARDWARE LAB */}
+        {/* TAB 5: HARDWARE LAB & PINOUTS */}
         {activeTab === 'hardware' && (
           <div className="space-y-6">
             <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-cyan-400 mb-1 font-mono">
-                  Hardware Prototyping Tiers for Hackathon
+                  Hardware Prototyping Tiers & Circuit Pinouts
                 </h2>
                 <p className="text-xs text-slate-400">
                   Pick the tier that fits your budget. The AI software pipeline is 100% identical across all three!
@@ -1166,7 +1445,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 5: SIH JUDGE Q&A SIMULATOR */}
+        {/* TAB 6: SIH JUDGE Q&A SIMULATOR */}
         {activeTab === 'judge_qa' && (
           <div className="space-y-6">
             <div className="bg-[#0c121e] border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
@@ -1201,8 +1480,9 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-[#060911] text-slate-500 text-xs py-4 px-4 text-center font-mono">
-        iTantra — Neural Transceiver System | Smart India Hackathon 2026 (SIH26173) | Designed for ISRO & Disaster Management
+      <footer className="border-t border-slate-800 bg-[#060911] text-slate-500 text-xs py-4 px-4 text-center font-mono flex flex-wrap items-center justify-between max-w-7xl mx-auto w-full gap-2">
+        <span>iTantra — Neural Transceiver System | Smart India Hackathon 2026 (SIH26173)</span>
+        <span className="text-cyan-400 font-bold">Team NeuralMesh (Lead: Shreyash Patil) • ISRO</span>
       </footer>
     </div>
   );
