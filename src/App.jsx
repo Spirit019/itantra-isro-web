@@ -25,7 +25,9 @@ import {
   Sliders,
   Play,
   Square,
-  Languages
+  Languages,
+  Edit3,
+  Check
 } from 'lucide-react';
 import { TACTICAL_SAMPLES, HOW_IT_WORKS_INFO } from './data/samplesAndInfo';
 import { audioEngine } from './utils/audioEngine';
@@ -34,7 +36,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('demo'); // demo | architecture | latency | hardware | judge_qa
   const [selectedSample, setSelectedSample] = useState(TACTICAL_SAMPLES[0]);
   const [customText, setCustomText] = useState('');
+  const [isEditingText, setIsEditingText] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [micVolume, setMicVolume] = useState(0);
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [packetDelivered, setPacketDelivered] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -53,6 +58,14 @@ export default function App() {
   // Audio Visualizer Simulation
   const [waveformData, setWaveformData] = useState([15, 30, 60, 45, 80, 55, 90, 40, 70, 30, 20]);
   const waveIntervalRef = useRef(null);
+  
+  // Audio Stream & Recognition Refs
+  const mediaStreamRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const timerIntervalRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animFrameRef = useRef(null);
 
   // Time-on-Air (ToA) Calculation in ms
   const calculateToA = () => {
@@ -71,53 +84,150 @@ export default function App() {
     ? selectedSample.translations[effectiveTargetLang]
     : (customText || selectedSample.text);
 
-  // Handle Voice Recording using Web Speech API if supported
-  const handleToggleRecord = () => {
+  // Dynamic 18-Byte Token Generator for Custom or Selected Text
+  const generate18ByteTokens = (text, langCode, isSos) => {
+    const header = 0x54;
+    const langMap = { hi: 1, ta: 2, bn: 3, te: 4, mr: 5, en: 10 };
+    const langId = langMap[langCode] || 1;
+    const priority = isSos ? 0xFF : 0x00;
+    const speaker = [0x8A, 0x3F];
+    
+    // Hash text into 11 payload bytes
+    const payload = [];
+    for (let i = 0; i < 11; i++) {
+      if (i < text.length) {
+        payload.push(text.charCodeAt(i % text.length) % 256);
+      } else {
+        payload.push((i * 17 + 31) % 256);
+      }
+    }
+    const crc = [0x4F, 0x92];
+    return [header, langId, priority, ...speaker, ...payload, ...crc];
+  };
+
+  const currentText = customText || selectedSample.text;
+  const currentTokens = generate18ByteTokens(currentText, selectedSample.lang, isEmergencySos);
+  const rawPcmBytes = customText ? Math.max(64000, currentText.length * 3200) : selectedSample.pcmBytes;
+  const compressionRatio = Math.round(rawPcmBytes / 18);
+
+  // Clean up recording resources
+  const stopRecordingCleanly = () => {
+    setIsRecording(false);
+    clearInterval(timerIntervalRef.current);
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+
+    audioEngine.playRadioChirp(950, 0.06);
+  };
+
+  // Robust HTML5 Mic Recording + Web Speech Recognition
+  const handleToggleRecord = async () => {
     if (isRecording) {
-      setIsRecording(false);
+      stopRecordingCleanly();
       return;
     }
-
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Speech Recognition is not supported directly in this browser. Please select one of our 6 pre-loaded Indic tactical audio samples or type text!');
-      return;
-    }
-
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRec();
-    recognition.lang = selectedSample.lang === 'en' ? 'en-IN' : `${selectedSample.lang}-IN`;
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsRecording(true);
-      audioEngine.playRadioChirp(700, 0.05);
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setCustomText(transcript);
-      setIsRecording(false);
-      audioEngine.playRadioChirp(900, 0.05);
-    };
-
-    recognition.onerror = () => {
-      setIsRecording(false);
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
 
     try {
-      recognition.start();
-    } catch (e) {
+      // 1. Request Real Microphone Access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      setPacketDelivered(false);
+      audioEngine.playRadioChirp(700, 0.05);
+
+      // Start duration timer
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingSeconds(s => s + 1);
+      }, 1000);
+
+      // 2. Attach Web Audio Volume Analyser for Live Mic Waveform
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        audioContextRef.current = ctx;
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        source.connect(analyser);
+        analyserRef.current = analyser;
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const updateVol = () => {
+          if (!mediaStreamRef.current) return;
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const avg = sum / dataArray.length;
+          setMicVolume(Math.min(100, Math.round((avg / 128) * 100)));
+          
+          // Animate waveform with real audio amplitude
+          const dynamicWave = Array.from({ length: 12 }, (_, i) => {
+            return Math.min(95, Math.max(10, Math.round((dataArray[i % dataArray.length] / 255) * 100)));
+          });
+          setWaveformData(dynamicWave);
+          
+          animFrameRef.current = requestAnimationFrame(updateVol);
+        };
+        updateVol();
+      }
+
+      // 3. Initiate Speech Recognition if available
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRec) {
+        const recognition = new SpeechRec();
+        recognitionRef.current = recognition;
+        
+        const langMap = { hi: 'hi-IN', ta: 'ta-IN', bn: 'bn-IN', te: 'te-IN', mr: 'mr-IN', en: 'en-IN' };
+        recognition.lang = langMap[selectedSample.lang] || 'hi-IN';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event) => {
+          let fullTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            fullTranscript += event.results[i][0].transcript;
+          }
+          if (fullTranscript.trim()) {
+            setCustomText(fullTranscript.trim());
+          }
+        };
+
+        recognition.onerror = (e) => {
+          console.warn('SpeechRecognition info:', e);
+        };
+
+        recognition.start();
+      } else {
+        // Fallback for browsers without Web Speech API
+        console.log('Using HTML5 Audio Recording Stream');
+      }
+
+    } catch (err) {
+      console.warn('Mic access issue:', err);
       setIsRecording(false);
+      // If mic is blocked, allow user to type directly
+      setIsEditingText(true);
+      alert('Microphone permission was not granted or unsupported. You can directly edit or type any speech text using the edit box!');
     }
   };
 
   // Trigger Packet Transmission
   const handleTransmit = () => {
+    if (isRecording) {
+      stopRecordingCleanly();
+    }
     setIsTransmitting(true);
     setPacketDelivered(false);
     audioEngine.playPacketBurst(timeOnAirMs);
@@ -165,11 +275,6 @@ export default function App() {
     setIsEmergencySos(false);
     audioEngine.stopSpeech();
   };
-
-  const currentText = customText || selectedSample.text;
-  const currentBytes = isEmergencySos ? 18 : 18;
-  const rawPcmBytes = selectedSample.pcmBytes;
-  const compressionRatio = Math.round(rawPcmBytes / currentBytes);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-cyan-500 selection:text-black">
@@ -381,9 +486,21 @@ export default function App() {
 
                   {/* Speech Input Presets */}
                   <div className="space-y-2 mb-4">
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                      Select Indic Speech Sample:
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                        Select Indic Speech Sample:
+                      </label>
+                      <button
+                        onClick={() => {
+                          setIsEditingText(!isEditingText);
+                          if (!isEditingText) setCustomText(currentText);
+                        }}
+                        className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        {isEditingText ? 'Done Editing' : '✏️ Type / Edit Text'}
+                      </button>
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                       {TACTICAL_SAMPLES.map((sample) => (
                         <button
@@ -391,6 +508,7 @@ export default function App() {
                           onClick={() => {
                             setSelectedSample(sample);
                             setCustomText('');
+                            setIsEditingText(false);
                             setPacketDelivered(false);
                             audioEngine.playRadioChirp(800, 0.04);
                           }}
@@ -408,33 +526,81 @@ export default function App() {
                   </div>
 
                   {/* Audio Capture Box */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3">
+                  <div className={`border rounded-lg p-4 space-y-3 transition-colors ${
+                    isRecording ? 'bg-red-950/40 border-red-500' : 'bg-slate-950 border-slate-800'
+                  }`}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                        <Mic className="h-3.5 w-3.5 text-cyan-400" />
+                        <Mic className={`h-3.5 w-3.5 ${isRecording ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`} />
                         Acoustic Input (16kHz PCM)
+                        {isRecording && (
+                          <span className="text-red-400 font-bold ml-1 animate-pulse">
+                            REC 00:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds}
+                          </span>
+                        )}
                       </span>
                       <button
                         onClick={handleToggleRecord}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md ${
                           isRecording
-                            ? 'bg-red-600 text-white animate-pulse'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse shadow-red-500/40'
+                            : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white'
                         }`}
                       >
-                        {isRecording ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
-                        {isRecording ? 'Listening...' : 'Record Voice'}
+                        {isRecording ? <Square className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+                        {isRecording ? 'Stop & Transcribe' : '🎙️ Record Voice (Mic)'}
                       </button>
                     </div>
 
-                    {/* Speech Text Box */}
+                    {/* Live Mic Volume Level Meter when Recording */}
+                    {isRecording && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-mono text-red-300">
+                          <span>Live Voice Input Level:</span>
+                          <span>{micVolume}%</span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-red-500/40">
+                          <div
+                            style={{ width: `${micVolume}%` }}
+                            className="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500 transition-all duration-75"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Speech Text Box or Edit Field */}
                     <div className="bg-slate-900/90 rounded p-3 border border-slate-800/80">
-                      <p className="text-sm font-medium text-slate-100 leading-relaxed">
-                        "{currentText}"
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1 italic">
-                        Meaning: {selectedSample.englishMeaning}
-                      </p>
+                      {isEditingText ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={customText}
+                            onChange={(e) => {
+                              setCustomText(e.target.value);
+                              setPacketDelivered(false);
+                            }}
+                            placeholder="Type or paste any text in Hindi, Tamil, English, etc..."
+                            className="w-full bg-slate-950 border border-cyan-500/50 rounded p-2 text-sm text-cyan-200 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                            rows={3}
+                          />
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => setIsEditingText(false)}
+                              className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-xs rounded flex items-center gap-1"
+                            >
+                              <Check className="h-3 w-3" /> Save Text
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-slate-100 leading-relaxed">
+                            "{currentText}"
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1 italic">
+                            {customText ? 'Custom Speech Input' : `Meaning: ${selectedSample.englishMeaning}`}
+                          </p>
+                        </>
+                      )}
                     </div>
 
                     {/* Compression Ratio Badge */}
@@ -458,7 +624,7 @@ export default function App() {
                       <span className="text-cyan-400">24 bps Bitrate</span>
                     </div>
                     <div className="grid grid-cols-6 sm:grid-cols-9 gap-1 bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-mono text-xs text-center">
-                      {selectedSample.tokens.map((byte, idx) => {
+                      {currentTokens.map((byte, idx) => {
                         let tag = 'BPE';
                         let color = 'text-cyan-300 bg-cyan-950/60 border-cyan-800/60';
                         if (idx === 0) {
@@ -480,7 +646,7 @@ export default function App() {
                           color = 'text-rose-300 bg-rose-950/60 border-rose-800/60';
                         }
 
-                        const byteHex = (isEmergencySos && idx === 2) ? '0xFF' : `0x${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+                        const byteHex = `0x${byte.toString(16).toUpperCase().padStart(2, '0')}`;
 
                         return (
                           <div key={idx} className={`p-1 rounded border ${color} flex flex-col`}>
@@ -672,9 +838,13 @@ export default function App() {
                       {waveformData.map((height, i) => (
                         <div
                           key={i}
-                          style={{ height: `${isPlayingAudio ? height : 6}%` }}
+                          style={{ height: `${isPlayingAudio ? height : (isRecording ? micVolume * 0.8 : 6)}%` }}
                           className={`w-1.5 rounded-full transition-all duration-75 ${
-                            isPlayingAudio ? 'bg-gradient-to-t from-emerald-500 to-cyan-400' : 'bg-slate-700'
+                            isPlayingAudio
+                              ? 'bg-gradient-to-t from-emerald-500 to-cyan-400'
+                              : isRecording
+                              ? 'bg-gradient-to-t from-red-500 to-amber-400'
+                              : 'bg-slate-700'
                           }`}
                         />
                       ))}
