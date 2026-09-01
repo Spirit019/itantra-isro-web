@@ -24,7 +24,8 @@ import {
   WifiOff,
   Sliders,
   Play,
-  Square
+  Square,
+  Languages
 } from 'lucide-react';
 import { TACTICAL_SAMPLES, HOW_IT_WORKS_INFO } from './data/samplesAndInfo';
 import { audioEngine } from './utils/audioEngine';
@@ -47,7 +48,7 @@ export default function App() {
 
   // SOS Emergency State
   const [isEmergencySos, setIsEmergencySos] = useState(false);
-  const [receiverTargetLang, setReceiverTargetLang] = useState('same'); // same | en | hi | ta | bn
+  const [receiverTargetLang, setReceiverTargetLang] = useState('same'); // same | en | hi | ta | bn | te | mr
 
   // Audio Visualizer Simulation
   const [waveformData, setWaveformData] = useState([15, 30, 60, 45, 80, 55, 90, 40, 70, 30, 20]);
@@ -57,13 +58,18 @@ export default function App() {
   const calculateToA = () => {
     if (radioMode === 'ble') return 18;
     if (radioMode === 'hc12') return 35;
-    // LoRa SX1262 formula approximation for 18 bytes
     const sf = spreadingFactor;
     const baseToA = Math.round(Math.pow(2, sf) / 125 * (18 + 12) * 0.25);
     return Math.max(45, baseToA);
   };
 
   const timeOnAirMs = calculateToA();
+
+  // Resolved Output Language & Text for Node Bravo
+  const effectiveTargetLang = receiverTargetLang === 'same' ? selectedSample.lang : receiverTargetLang;
+  const translatedText = (!customText && selectedSample.translations && selectedSample.translations[effectiveTargetLang])
+    ? selectedSample.translations[effectiveTargetLang]
+    : (customText || selectedSample.text);
 
   // Handle Voice Recording using Web Speech API if supported
   const handleToggleRecord = () => {
@@ -116,7 +122,6 @@ export default function App() {
     setPacketDelivered(false);
     audioEngine.playPacketBurst(timeOnAirMs);
 
-    // Simulate animated wave packets
     let step = 0;
     clearInterval(waveIntervalRef.current);
     waveIntervalRef.current = setInterval(() => {
@@ -131,22 +136,22 @@ export default function App() {
     }, timeOnAirMs / 6);
   };
 
-  // Trigger Voice Playback on Node Bravo
+  // Trigger Voice Playback on Node Bravo with Cross-Lingual Speech
   const handlePlayReceivedSpeech = async () => {
+    if (isPlayingAudio) return;
     setIsPlayingAudio(true);
-    const textToSpeak = customText || selectedSample.text;
-    const langToSpeak = receiverTargetLang === 'same' ? selectedSample.lang : receiverTargetLang;
-    
-    // Animate waveform during playback
+
     const animInterval = setInterval(() => {
       setWaveformData(Array.from({ length: 14 }, () => Math.floor(Math.random() * 90) + 10));
     }, 100);
 
-    await audioEngine.speakText(textToSpeak, langToSpeak);
-
-    clearInterval(animInterval);
-    setIsPlayingAudio(false);
-    setWaveformData([10, 20, 15, 30, 25, 40, 30, 20, 15, 10]);
+    try {
+      await audioEngine.speakText(translatedText, effectiveTargetLang);
+    } finally {
+      clearInterval(animInterval);
+      setIsPlayingAudio(false);
+      setWaveformData([10, 20, 15, 30, 25, 40, 30, 20, 15, 10]);
+    }
   };
 
   // Trigger Emergency Level 0 SOS
@@ -309,7 +314,7 @@ export default function App() {
         {/* TAB 1: LIVE WORKING TRANSCEIVER DEMO */}
         {activeTab === 'demo' && (
           <div className="space-y-6">
-            {/* Top Control Bar: Radio Selection & Preset Speech Picker */}
+            {/* Top Control Bar */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-mono text-slate-400 uppercase">Radio Phy Mode:</span>
@@ -608,16 +613,32 @@ export default function App() {
                       </span>
                     </div>
 
-                    {/* Received Decoded Text */}
-                    <div className="bg-slate-900/90 rounded p-3 border border-slate-800/80 min-h-[72px] flex flex-col justify-center">
+                    {/* Received & Translated Text Display */}
+                    <div className="bg-slate-900/90 rounded p-3 border border-slate-800/80 min-h-[85px] flex flex-col justify-center space-y-1.5">
                       {packetDelivered ? (
                         <>
-                          <p className="text-sm font-medium text-emerald-200 leading-relaxed">
-                            "{currentText}"
-                          </p>
-                          <p className="text-xs text-slate-400 mt-1 italic">
-                            Language: {selectedSample.langName} | MOS Quality: 4.26 / 5.0
-                          </p>
+                          <div className="text-xs text-slate-400">
+                            <span className="text-slate-500 font-mono text-[10px] uppercase">Incoming Token ({selectedSample.langName.split(' ')[0]}):</span>
+                            <p className="font-medium text-slate-300 italic text-[12px]">"{currentText}"</p>
+                          </div>
+                          
+                          {/* If cross-lingual translation active */}
+                          {effectiveTargetLang !== selectedSample.lang && (
+                            <div className="pt-1.5 border-t border-slate-800/80">
+                              <span className="text-emerald-400 font-mono text-[10px] uppercase flex items-center gap-1">
+                                <Languages className="h-3 w-3" /> Synthesizing into {effectiveTargetLang.toUpperCase()}:
+                              </span>
+                              <p className="font-bold text-emerald-200 text-sm leading-relaxed">
+                                "{translatedText}"
+                              </p>
+                            </div>
+                          )}
+                          
+                          {effectiveTargetLang === selectedSample.lang && (
+                            <p className="text-xs text-slate-400 italic">
+                              MOS Quality: 4.26 / 5.0 (FastPitch + Vocos ONNX)
+                            </p>
+                          )}
                         </>
                       ) : (
                         <p className="text-xs text-slate-500 italic text-center">
@@ -637,10 +658,12 @@ export default function App() {
                         className="w-full bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                       >
                         <option value="same">Original Native Language ({selectedSample.langName})</option>
-                        <option value="en">English (Synthesized)</option>
-                        <option value="hi">Hindi (हिंदी)</option>
                         <option value="ta">Tamil (தமிழ்)</option>
+                        <option value="hi">Hindi (हिंदी)</option>
                         <option value="bn">Bengali (বাংলা)</option>
+                        <option value="te">Telugu (తెలుగు)</option>
+                        <option value="mr">Marathi (मराठी)</option>
+                        <option value="en">English (Indian)</option>
                       </select>
                     </div>
 

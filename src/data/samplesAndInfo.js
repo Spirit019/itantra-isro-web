@@ -1,4 +1,4 @@
-// Tactical speech samples and complete technical information for iTantra Demo
+// Tactical speech samples with complete multilingual translations and technical information for iTantra
 
 export const TACTICAL_SAMPLES = [
   {
@@ -7,8 +7,16 @@ export const TACTICAL_SAMPLES = [
     langName: 'Hindi (हिंदी)',
     text: 'चमोली में बादल फटा है, तुरंत मेडिकल टीम भेजो।',
     englishMeaning: 'Cloudburst in Chamoli, send medical team immediately.',
+    translations: {
+      hi: 'चमोली में बादल फटा है, तुरंत मेडिकल टीम भेजो।',
+      ta: 'சமோலியில் மேகவெடிப்பு ஏற்பட்டுள்ளது, உடனடியாக மருத்துவக் குழுவை அனுப்புங்கள்.',
+      bn: 'চামোলিতে মেঘভাঙা বৃষ্টি হয়েছে, অবিলম্বে মেডিকেল টিম পাঠান।',
+      te: 'చమోలీలో మేఘ విస్ఫోటనం జరిగింది, వెంటనే వైద్య బృందాన్ని పంపండి.',
+      mr: 'चमोलीमध्ये ढगफुटी झाली आहे, तातडीने वैद्यकीय पथक पाठवा.',
+      en: 'Cloudburst in Chamoli, send medical team immediately.'
+    },
     durationSec: 2.8,
-    pcmBytes: 89600, // 16kHz 16-bit PCM (32,000 bytes/sec)
+    pcmBytes: 89600,
     tokens: [0x54, 0x01, 0x00, 0x8A, 0x3F, 0x1B, 0x4C, 0x82, 0x9D, 0x31, 0xFA, 0x07, 0x88, 0x93, 0x2C, 0xE1, 0x4F, 0x92],
     category: 'Disaster Alert',
     location: 'Chamoli, Uttarakhand (30.42° N, 79.33° E)',
@@ -19,6 +27,14 @@ export const TACTICAL_SAMPLES = [
     langName: 'Tamil (தமிழ்)',
     text: 'கப்பல் புயலில் சிக்கியுள்ளது, உடனடியாக மீட்புப் படகை அனுப்புங்கள்.',
     englishMeaning: 'Vessel trapped in storm, dispatch rescue boat immediately.',
+    translations: {
+      hi: 'जहाज तूफान में फंसा है, तुरंत बचाव नाव भेजें।',
+      ta: 'கப்பல் புயலில் சிக்கியுள்ளது, உடனடியாக மீட்புப் படகை அனுப்புங்கள்.',
+      bn: 'জাহাজ ঝড়ে আটকা পড়েছে, অবিলম্বে উদ্ধারকারী নৌকা পাঠান।',
+      te: 'ఓడ తుఫానులో చిక్కుకుంది, వెంటనే సహాయక పడవను పంపండి.',
+      mr: 'जहाज वादळात अडकले आहे, तातडीने बचाव बोट पाठवा.',
+      en: 'Vessel trapped in storm, dispatch rescue boat immediately.'
+    },
     durationSec: 3.2,
     pcmBytes: 102400,
     tokens: [0x54, 0x02, 0x00, 0x7B, 0x22, 0x3A, 0x9F, 0x11, 0xC4, 0x8D, 0x6E, 0x55, 0x41, 0x90, 0x3B, 0xA2, 0x88, 0x7E],
@@ -31,6 +47,14 @@ export const TACTICAL_SAMPLES = [
     langName: 'Bengali (বাংলা)',
     text: 'সুন্দরবনে বাঁধ ভেঙেছে, ২০০০ মানুষ আটকা পড়েছে।',
     englishMeaning: 'Embankment breached in Sundarbans, 2000 people stranded.',
+    translations: {
+      hi: 'सुंदरबन में तटबंध टूट गया है, २००० लोग फंसे हुए हैं।',
+      ta: 'சுந்தரவனத்தில் அணை உடைந்தது, 2000 மக்கள் சிக்கியுள்ளனர்.',
+      bn: 'সুন্দরবনে বাঁধ ভেঙেছে, ২০০০ মানুষ আটকা পড়েছে।',
+      te: 'సుందర్బన్స్‌లో కట్ట తెగిపోయింది, 2000 మంది చిక్కుకున్నారు.',
+      mr: 'सुंदरबनमध्ये धरण फुटले आहे, २००० लोक अडकले आहेत.',
+      en: 'Embankment breached in Sundarbans, 2000 people stranded.'
+    },
     durationSec: 3.0,
     pcmBytes: 96000,
     tokens: [0x54, 0x03, 0x00, 0x9C, 0x44, 0x2D, 0x81, 0x3F, 0x90, 0x4B, 0x12, 0xEE, 0x5A, 0x77, 0x6B, 0x19, 0x3D, 0x5B],
@@ -43,6 +67,14 @@ export const TACTICAL_SAMPLES = [
     langName: 'Telugu (తెలుగు)',
     text: 'తీరప్రాంతంలో తుఫాను తీవ్రమైంది, విద్యుత్ సరఫరా నిలిచిపోయింది.',
     englishMeaning: 'Cyclone intensified in coastal zone, power grid disconnected.',
+    translations: {
+      hi: 'तटीय क्षेत्र में चक्रवात तेज हो गया है, बिजली गुल है।',
+      ta: 'கடலோரப் பகுதியில் புயல் தீவிரமடைந்தது, மின்சாரம் துண்டிக்கப்பட்டது.',
+      bn: 'উপকূলীয় অঞ্চলে ঘূর্ণিঝড় তীব্র হয়েছে, বিদ্যুৎ বিচ্ছিন্ন।',
+      te: 'తీరప్రాంతంలో తుఫాను తీవ్రమైంది, విద్యుత్ సరఫరా నిలిచిపోయింది.',
+      mr: 'किनारपट्टी भागात चक्रीवादळ तीव्र झाले आहे, वीज खंडित झाली आहे.',
+      en: 'Cyclone intensified in coastal zone, power grid disconnected.'
+    },
     durationSec: 3.1,
     pcmBytes: 99200,
     tokens: [0x54, 0x04, 0x00, 0x6E, 0x51, 0x48, 0x92, 0x03, 0xAA, 0x7D, 0x19, 0x4F, 0x8B, 0x23, 0x50, 0x66, 0x9C, 0x11],
@@ -55,6 +87,14 @@ export const TACTICAL_SAMPLES = [
     langName: 'Marathi (मराठी)',
     text: 'घाटमाथ्यावर दरड कोसळली आहे, रस्ता पूर्ण बंद आहे.',
     englishMeaning: 'Landslide on mountain pass, highway completely blocked.',
+    translations: {
+      hi: 'घाट पर भूस्खलन हुआ है, सड़क पूरी तरह से बंद है।',
+      ta: 'மலைப்பாதையில் நிலச்சரிவு ஏற்பட்டுள்ளது, சாலை முற்றிலும் மூடப்பட்டுள்ளது.',
+      bn: 'ঘাট মাথায় ভূমিধস হয়েছে, রাস্তা সম্পূর্ণ বন্ধ।',
+      te: 'ఘాట్ రోడ్డులో కొండచరియలు విరిగిపడ్డాయి, రహదారి పూర్తిగా మూసివేయబడింది.',
+      mr: 'घाटमाथ्यावर दरड कोसळली आहे, रस्ता पूर्ण बंद आहे.',
+      en: 'Landslide on mountain pass, highway completely blocked.'
+    },
     durationSec: 2.9,
     pcmBytes: 92800,
     tokens: [0x54, 0x05, 0x00, 0x88, 0x19, 0x3C, 0x71, 0x5A, 0x2E, 0x9B, 0x04, 0x33, 0x67, 0x82, 0x1E, 0x55, 0x7A, 0x4C],
@@ -67,6 +107,14 @@ export const TACTICAL_SAMPLES = [
     langName: 'English',
     text: 'Base Station 4, oxygen supply critical, initiate evacuation plan.',
     englishMeaning: 'Base Station 4, oxygen supply critical, initiate evacuation plan.',
+    translations: {
+      hi: 'बेस स्टेशन 4, ऑक्सीजन आपूर्ति गंभीर है, निकासी योजना शुरू करें।',
+      ta: 'அடிப்படை நிலையம் 4, ஆக்ஸிஜன் இருப்பு ஆபத்தானது, வெளியேற்றத் திட்டத்தைத் தொடங்குங்கள்.',
+      bn: 'বেস স্টেশন ৪, অক্সিজেন সরবরাহ আশঙ্কাজনক, স্থানান্তরের পরিকল্পনা শুরু করুন।',
+      te: 'బేస్ స్టేషన్ 4, ఆక్సిజన్ సరఫరా ప్రమాదకరంగా ఉంది, తరలింపు ప్రణాళిక ప్రారంభించండి.',
+      mr: 'बेस स्टेशन ४, ऑक्सिजन पुरवठा गंभीर आहे, स्थलांतर योजना सुरू करा.',
+      en: 'Base Station 4, oxygen supply critical, initiate evacuation plan.'
+    },
     durationSec: 2.6,
     pcmBytes: 83200,
     tokens: [0x54, 0x0A, 0x00, 0x99, 0x10, 0x45, 0x56, 0x41, 0x43, 0x5F, 0x4F, 0x58, 0x59, 0x5F, 0x42, 0x34, 0x1A, 0xEE],
